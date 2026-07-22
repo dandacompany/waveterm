@@ -4,7 +4,7 @@
 #
 # Required repository secrets:
 #   macOS:   MACOS_CSC_LINK (base64 of Developer ID Application .p12), MACOS_CSC_KEY_PASSWORD,
-#            APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
+#            APPLE_API_KEY_B64 (base64 of App Store Connect .p8), APPLE_API_KEY_ID, APPLE_API_ISSUER
 #   Windows: WIN_CSC_LINK (base64 of code-signing .pfx), WIN_CSC_KEY_PASSWORD
 # Linux installers are not code-signed (normal for deb/rpm/AppImage).
 
@@ -101,6 +101,12 @@ jobs:
               env:
                   USE_SYSTEM_FPM: true
                   SNAPCRAFT_BUILD_ENVIRONMENT: host
+            # Write the App Store Connect API key (.p8) to a file for notarytool
+            - name: Prepare Apple API key (Darwin only)
+              if: matrix.platform == 'darwin'
+              run: |
+                  echo "${{ secrets.APPLE_API_KEY_B64 }}" | base64 --decode > "$RUNNER_TEMP/apple-api-key.p8"
+              shell: bash
             # Retry Darwin build in case of notarization failures
             - uses: nick-fields/retry@v4
               name: Build (Darwin)
@@ -114,9 +120,9 @@ jobs:
                   USE_SYSTEM_FPM: true
                   CSC_LINK: ${{ secrets.MACOS_CSC_LINK }}
                   CSC_KEY_PASSWORD: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
-                  APPLE_ID: ${{ secrets.APPLE_ID }}
-                  APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  APPLE_API_KEY: ${{ runner.temp }}/apple-api-key.p8
+                  APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+                  APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
             - name: Build (Windows)
               if: matrix.platform == 'windows'
               run: task package
