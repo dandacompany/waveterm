@@ -137,6 +137,9 @@ declare global {
         openExternalPaths: (paths: string[]) => void; // open-external-paths
         saveTextFile: (fileName: string, content: string) => Promise<boolean>; // save-text-file
         setIsActive: () => Promise<void>; // set-is-active
+        fileDragStart: (payload: { uris: string[]; sourceConn: string; isDir: boolean }) => void; // file-drag-start
+        fileDragEnd: () => void; // file-drag-end
+        fileDragGet: () => Promise<{ uris: string[]; sourceConn: string; isDir: boolean } | null>; // file-drag-get
     };
 
     type ElectronContextMenuItem = {
