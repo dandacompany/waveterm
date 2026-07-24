@@ -25,8 +25,11 @@ function isPathAtOrUnder(anchor: string, current: string): boolean {
     if (a == c) {
         return true;
     }
-    if (a == "/") {
-        return true;
+    // a bare root ("/" or a Windows drive root like "C:/") already ends in "/",
+    // so a descendant is just a prefix match; other anchors need an explicit "/" boundary.
+    const aIsRoot = a == "/" || /^[A-Za-z]:\/$/.test(a);
+    if (aIsRoot) {
+        return c.startsWith(a);
     }
     return c.startsWith(a + "/");
 }

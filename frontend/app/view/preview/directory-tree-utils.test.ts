@@ -32,6 +32,18 @@ describe("isPathAtOrUnder", () => {
     test("root is above everything", () => {
         expect(isPathAtOrUnder("/", "/a/b")).toBe(true);
     });
+    test("unix root is not above a different (windows) root space", () => {
+        expect(isPathAtOrUnder("/", "C:/Users")).toBe(false);
+    });
+    test("unix root is not above a relative path", () => {
+        expect(isPathAtOrUnder("/", "relative/path")).toBe(false);
+    });
+    test("windows drive root is above its children", () => {
+        expect(isPathAtOrUnder("C:/", "C:/Users/dante")).toBe(true);
+    });
+    test("windows drive root is not above a different drive", () => {
+        expect(isPathAtOrUnder("C:/", "D:/x")).toBe(false);
+    });
 });
 
 describe("computeTreeAnchor", () => {
@@ -50,5 +62,8 @@ describe("computeTreeAnchor", () => {
     test("initializes to current when anchor is blank", () => {
         expect(computeTreeAnchor("", "/proj")).toBe("/proj");
         expect(computeTreeAnchor(null, "/proj")).toBe("/proj");
+    });
+    test("keeps windows drive-root anchor for a descendant", () => {
+        expect(computeTreeAnchor("C:/", "C:/proj/src")).toBe("C:/");
     });
 });
