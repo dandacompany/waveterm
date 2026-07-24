@@ -83,15 +83,21 @@ const config = {
         "dist/schema/**/*", // schema files for Monaco editor
     ],
     protocols: [{ name: "Wave", schemes: ["wave"] }],
+    // one entry per extension (string ext): the Linux/Windows app-builder packager
+    // rejects an array `ext`, so associations must be flattened to a single ext each
     fileAssociations: [
-        { ext: ["md", "txt", "log", "csv", "json", "xml", "yaml", "yml"], name: "Text Document", role: "Viewer" },
-        { ext: ["pdf"], name: "PDF Document", role: "Viewer" },
-        { ext: ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"], name: "Image", role: "Viewer" },
-        {
-            ext: ["js", "ts", "jsx", "tsx", "py", "go", "rs", "c", "cpp", "h", "java", "sh", "toml", "ini"],
+        ...["md", "txt", "log", "csv", "json", "xml", "yaml", "yml"].map((ext) => ({
+            ext,
+            name: "Text Document",
+            role: "Viewer",
+        })),
+        { ext: "pdf", name: "PDF Document", role: "Viewer" },
+        ...["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"].map((ext) => ({ ext, name: "Image", role: "Viewer" })),
+        ...["js", "ts", "jsx", "tsx", "py", "go", "rs", "c", "cpp", "h", "java", "sh", "toml", "ini"].map((ext) => ({
+            ext,
             name: "Source Code",
             role: "Viewer",
-        },
+        })),
     ],
     mac: {
         target: [
