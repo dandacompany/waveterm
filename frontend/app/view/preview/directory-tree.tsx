@@ -6,7 +6,7 @@ import { globalStore } from "@/app/store/jotaiStore";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { fireAndForget } from "@/util/util";
 import { useAtomValue } from "jotai";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { isPathAtOrUnder, normalizeTreePath } from "./directory-tree-utils";
 import { type PreviewModel } from "./preview-model";
 
@@ -40,13 +40,15 @@ type TreeNodeProps = {
     currentPath: string;
     expanded: Set<string>;
     childrenMap: { [path: string]: FileInfo[] };
+    loadState: { [path: string]: "loading" | "error" };
     toggle: (path: string) => void;
 };
 
-function TreeNode({ model, path, name, depth, currentPath, expanded, childrenMap, toggle }: TreeNodeProps) {
+function TreeNode({ model, path, name, depth, currentPath, expanded, childrenMap, loadState, toggle }: TreeNodeProps) {
     const isOpen = expanded.has(normalizeTreePath(path));
     const isCurrent = normalizeTreePath(path) == normalizeTreePath(currentPath);
     const children = childrenMap[normalizeTreePath(path)];
+    const nodeState = loadState[normalizeTreePath(path)];
 
     const onContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -81,21 +83,33 @@ function TreeNode({ model, path, name, depth, currentPath, expanded, childrenMap
                 </span>
                 <span className="truncate">{name}</span>
             </div>
-            {isOpen && children != null && (
+            {isOpen && (
                 <div className="dir-tree-children">
-                    {children.map((c) => (
-                        <TreeNode
-                            key={c.path}
-                            model={model}
-                            path={c.path}
-                            name={c.name}
-                            depth={depth + 1}
-                            currentPath={currentPath}
-                            expanded={expanded}
-                            childrenMap={childrenMap}
-                            toggle={toggle}
-                        />
-                    ))}
+                    {children != null &&
+                        children.map((c) => (
+                            <TreeNode
+                                key={c.path}
+                                model={model}
+                                path={c.path}
+                                name={c.name}
+                                depth={depth + 1}
+                                currentPath={currentPath}
+                                expanded={expanded}
+                                childrenMap={childrenMap}
+                                loadState={loadState}
+                                toggle={toggle}
+                            />
+                        ))}
+                    {children == null && nodeState == "error" && (
+                        <div className="text-error text-xs" style={{ paddingLeft: (depth + 1) * 12 + 4 }}>
+                            ⚠ failed to load
+                        </div>
+                    )}
+                    {children == null && nodeState != "error" && (
+                        <div className="text-secondary text-xs" style={{ paddingLeft: (depth + 1) * 12 + 4 }}>
+                            …
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -110,14 +124,42 @@ const DirectoryTree = memo(({ model }: { model: PreviewModel }) => {
 
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
     const [childrenMap, setChildrenMap] = useState<{ [path: string]: FileInfo[] }>({});
+    const [loadState, setLoadState] = useState<{ [path: string]: "loading" | "error" }>({});
+    const [reloadNonce, setReloadNonce] = useState(0);
+    const prevShowHidden = useRef(showHidden);
 
     const anchor = normalizeTreePath(treeRoot != "" ? treeRoot : currentPath);
 
     const loadInto = async (path: string) => {
         const key = normalizeTreePath(path);
-        const dirs = await loadChildDirs(model, path, showHidden);
-        setChildrenMap((prev) => ({ ...prev, [key]: dirs }));
+        setLoadState((prev) => ({ ...prev, [key]: "loading" }));
+        try {
+            const dirs = await loadChildDirs(model, path, showHidden);
+            setChildrenMap((prev) => ({ ...prev, [key]: dirs }));
+            setLoadState((prev) => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+            });
+        } catch (e) {
+            console.error("directory-tree load error", path, e);
+            setLoadState((prev) => ({ ...prev, [key]: "error" }));
+        }
     };
+
+    // Hidden-file filtering happens at fetch time, so cached children go stale when the eye
+    // toggle flips. Drop the cache + expansion and bump reloadNonce so the reveal effect
+    // re-runs against an empty cache (clearing alone wouldn't retrigger it — deps unchanged).
+    useEffect(() => {
+        if (prevShowHidden.current === showHidden) {
+            return;
+        }
+        prevShowHidden.current = showHidden;
+        setChildrenMap({});
+        setExpanded(new Set());
+        setLoadState({});
+        setReloadNonce((n) => n + 1);
+    }, [showHidden]);
 
     const toggle = (path: string) => {
         const key = normalizeTreePath(path);
@@ -172,7 +214,7 @@ const DirectoryTree = memo(({ model }: { model: PreviewModel }) => {
                 return next;
             });
         });
-    }, [anchor, currentPath, showHidden]);
+    }, [anchor, currentPath, reloadNonce]);
 
     if (anchor == "") {
         return <div className="dir-tree-panel p-2 text-secondary text-xs">No folder</div>;
@@ -189,6 +231,7 @@ const DirectoryTree = memo(({ model }: { model: PreviewModel }) => {
                 currentPath={currentPath}
                 expanded={expanded}
                 childrenMap={childrenMap}
+                loadState={loadState}
                 toggle={toggle}
             />
         </div>
