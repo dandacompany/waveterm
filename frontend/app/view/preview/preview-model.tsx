@@ -160,6 +160,9 @@ export class PreviewModel implements ViewModel {
     refreshVersion: PrimitiveAtom<number>;
     directorySearchActive: PrimitiveAtom<boolean>;
     refreshCallback: () => void;
+    externalWatchPath: string;
+    externalWatchModTime: number;
+    externalWatchSize: number;
     dirTreeView: Atom<boolean>;
     dirTreeRoot: Atom<string>;
     pendingLocationAtom: PrimitiveAtom<{ anchor?: string; line?: number }>;
@@ -513,6 +516,43 @@ export class PreviewModel implements ViewModel {
 
     markdownShowTocToggle() {
         globalStore.set(this.markdownShowToc, !globalStore.get(this.markdownShowToc));
+    }
+
+    // Poll the previewed file's stat and live-reload when it changes on disk (local or remote).
+    // Skipped while editing or with an unsaved buffer so the user's in-progress edits are never clobbered.
+    async checkForExternalUpdate(): Promise<void> {
+        if (globalStore.get(this.editMode)) {
+            return;
+        }
+        if (globalStore.get(this.newFileContent) != null) {
+            return;
+        }
+        const path = await globalStore.get(this.statFilePath);
+        if (path == null) {
+            return;
+        }
+        let statFile: FileInfo;
+        try {
+            statFile = await this.env.rpc.FileInfoCommand(TabRpcClient, { info: { path } });
+        } catch (e) {
+            return;
+        }
+        if (statFile == null || statFile.notfound) {
+            return;
+        }
+        // re-baseline (no reload) when the previewed path changes so switching files doesn't false-trigger
+        if (this.externalWatchPath != path) {
+            this.externalWatchPath = path;
+            this.externalWatchModTime = statFile.modtime;
+            this.externalWatchSize = statFile.size;
+            return;
+        }
+        if (statFile.modtime == this.externalWatchModTime && statFile.size == this.externalWatchSize) {
+            return;
+        }
+        this.externalWatchModTime = statFile.modtime;
+        this.externalWatchSize = statFile.size;
+        globalStore.set(this.refreshVersion, (v) => v + 1);
     }
 
     get viewComponent(): ViewComponent {
