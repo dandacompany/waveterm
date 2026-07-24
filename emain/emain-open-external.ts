@@ -1,19 +1,51 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import fs from "fs";
 import { fireAndForget } from "@/util/util";
+import fs from "fs";
 import { OpenItem } from "./emain-open-external-parse";
 import { createNewWaveWindow, focusedWaveWindow, getAllWaveWindows, WaveBrowserWindow } from "./emain-window";
 
 const SupportedExtensions = new Set([
-    "md", "txt", "pdf", "csv", "json", "log", "xml", "yaml", "yml",
-    "png", "jpg", "jpeg", "gif", "svg", "webp", "bmp",
-    "js", "ts", "jsx", "tsx", "py", "go", "rs", "c", "cpp", "h", "java", "sh", "toml", "ini",
+    "md",
+    "txt",
+    "pdf",
+    "csv",
+    "json",
+    "log",
+    "xml",
+    "yaml",
+    "yml",
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "svg",
+    "webp",
+    "bmp",
+    "js",
+    "ts",
+    "jsx",
+    "tsx",
+    "py",
+    "go",
+    "rs",
+    "c",
+    "cpp",
+    "h",
+    "java",
+    "sh",
+    "toml",
+    "ini",
 ]);
 
 let appReady = false;
 let buffer: OpenItem[] = [];
+let nativeOpenEnabled = true;
+
+export function setNativeOpenEnabled(enabled: boolean): void {
+    nativeOpenEnabled = enabled;
+}
 
 function isSupportedFile(path: string): boolean {
     const dotIdx = path.lastIndexOf(".");
@@ -54,6 +86,9 @@ async function resolveTargetWindow(): Promise<WaveBrowserWindow> {
 }
 
 export async function openExternalPaths(items: OpenItem[]): Promise<void> {
+    if (!nativeOpenEnabled) {
+        return;
+    }
     const resolved = items.map(resolveItem).filter((x) => x != null);
     if (resolved.length === 0) {
         return;
@@ -70,6 +105,9 @@ export async function openExternalPaths(items: OpenItem[]): Promise<void> {
 }
 
 export function bufferOrOpen(items: OpenItem[]): void {
+    if (!nativeOpenEnabled) {
+        return;
+    }
     if (items.length === 0) {
         return;
     }
