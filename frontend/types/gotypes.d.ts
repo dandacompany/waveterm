@@ -382,6 +382,7 @@ declare global {
     type CommandFileCopyData = {
         srcuri: string;
         desturi: string;
+        copyid?: string;
         opts?: FileCopyOpts;
     };
 
@@ -544,6 +545,8 @@ declare global {
         path: string;
         byterange?: string;
         streammeta: StreamMeta;
+        copyid?: string;
+        totalsize?: number;
     };
 
     // wshrpc.CommandRemoteListEntriesData
@@ -947,6 +950,15 @@ declare global {
         recursive?: boolean;
         merge?: boolean;
         timeout?: number;
+    };
+
+    // wshrpc.FileCopyProgressData
+    type FileCopyProgressData = {
+        copyid: string;
+        bytes: number;
+        total: number;
+        done: boolean;
+        error?: string;
     };
 
     // wshrpc.FileData
