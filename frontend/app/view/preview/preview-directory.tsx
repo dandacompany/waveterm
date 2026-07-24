@@ -835,11 +835,8 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                 if (monitor.didDrop()) {
                     return;
                 }
-                const timeoutYear = 31536000000; // one year
-                const opts: FileCopyOpts = {
-                    timeout: timeoutYear,
-                };
-                const desturi = await model.formatRemoteUri(dirPath, globalStore.get);
+                // resolve the source uri before any await so the broker read (file-drag-get) is
+                // dispatched at drop-entry, before the source window's dragend clears currentDrag
                 let srcuri = draggedFile?.uri;
                 if (srcuri == null) {
                     const brokered = await getApi().fileDragGet();
@@ -848,6 +845,11 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                     }
                     srcuri = brokered.uris[0];
                 }
+                const timeoutYear = 31536000000; // one year
+                const opts: FileCopyOpts = {
+                    timeout: timeoutYear,
+                };
+                const desturi = await model.formatRemoteUri(dirPath, globalStore.get);
                 const data: CommandFileCopyData = {
                     srcuri,
                     desturi,
