@@ -148,9 +148,13 @@ const DirectoryTree = memo(({ model }: { model: PreviewModel }) => {
             }
             toExpand.push(anchorKey);
             if (isPathAtOrUnder(anchor, currentPath) && anchorKey != normalizeTreePath(currentPath)) {
-                const rest = normalizeTreePath(currentPath).slice(anchorKey == "/" ? 1 : anchorKey.length + 1);
+                // anchorKey may be a bare root that already ends in "/" ("/" or a Windows
+                // drive root like "C:/"), so derive the prefix from the key itself instead
+                // of special-casing only "/".
+                const anchorPrefix = anchorKey.endsWith("/") ? anchorKey : anchorKey + "/";
+                const rest = normalizeTreePath(currentPath).slice(anchorPrefix.length);
                 const segs = rest.split("/").filter((s) => s != "");
-                let acc = anchorKey == "/" ? "" : anchorKey;
+                let acc = anchorKey.endsWith("/") ? anchorKey.slice(0, -1) : anchorKey;
                 for (const seg of segs) {
                     acc = acc + "/" + seg;
                     const accKey = normalizeTreePath(acc);
