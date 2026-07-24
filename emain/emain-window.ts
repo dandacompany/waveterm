@@ -5,7 +5,15 @@ import { ClientService, ObjectService, WindowService, WorkspaceService } from "@
 import { waveEventSubscribeSingle } from "@/app/store/wps";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { fireAndForget } from "@/util/util";
-import { BaseWindow, BaseWindowConstructorOptions, dialog, globalShortcut, ipcMain, screen, webContents } from "electron";
+import {
+    BaseWindow,
+    BaseWindowConstructorOptions,
+    dialog,
+    globalShortcut,
+    ipcMain,
+    screen,
+    webContents,
+} from "electron";
 import { globalEvents } from "emain/emain-events";
 import path from "path";
 import { debounce } from "throttle-debounce";
@@ -130,6 +138,10 @@ type WindowActionQueueEntry =
       }
     | {
           op: "createtab";
+      }
+    | {
+          op: "createtabwithblock";
+          blockDef: { view: string; file?: string; edit?: boolean; connection?: string };
       }
     | {
           op: "closetab";
@@ -529,6 +541,10 @@ export class WaveBrowserWindow extends BaseWindow {
         await this._queueActionInternal({ op: "createtab" });
     }
 
+    async openBlockInNewTab(blockDef: { view: string; file?: string; edit?: boolean; connection?: string }) {
+        await this._queueActionInternal({ op: "createtabwithblock", blockDef });
+    }
+
     async queueCloseTab(tabId: string) {
         await this._queueActionInternal({ op: "closetab", tabId });
     }
@@ -568,6 +584,21 @@ export class WaveBrowserWindow extends BaseWindow {
                     case "createtab":
                         tabId = await WorkspaceService.CreateTab(this.workspaceId, null, true);
                         break;
+                    case "createtabwithblock": {
+                        tabId = await WorkspaceService.CreateTab(this.workspaceId, null, true);
+                        const meta: { [key: string]: any } = { view: entry.blockDef.view };
+                        if (entry.blockDef.file != null) {
+                            meta["file"] = entry.blockDef.file;
+                        }
+                        if (entry.blockDef.edit) {
+                            meta["edit"] = true;
+                        }
+                        if (entry.blockDef.connection != null) {
+                            meta["connection"] = entry.blockDef.connection;
+                        }
+                        await RpcApi.CreateBlockCommand(ElectronWshClient, { tabid: tabId, blockdef: { meta } });
+                        break;
+                    }
                     case "switchtab":
                         tabId = entry.tabId;
                         if (this.activeTabView?.waveTabId == tabId) {
