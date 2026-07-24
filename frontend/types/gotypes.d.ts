@@ -1239,6 +1239,8 @@ declare global {
         "vdom:persist"?: boolean;
         "onboarding:githubstar"?: boolean;
         "onboarding:lastversion"?: string;
+        "dir:treeview"?: boolean;
+        "dir:treeroot"?: string;
         count?: number;
     };
 

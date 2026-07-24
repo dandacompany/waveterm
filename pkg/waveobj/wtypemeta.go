@@ -158,6 +158,9 @@ type MetaTSType struct {
 	OnboardingGithubStar  bool   `json:"onboarding:githubstar,omitempty"`  // for client
 	OnboardingLastVersion string `json:"onboarding:lastversion,omitempty"` // for client (tracks semver of last 'onboarding' shown)
 
+	DirTreeView bool   `json:"dir:treeview,omitempty"`
+	DirTreeRoot string `json:"dir:treeroot,omitempty"`
+
 	Count int `json:"count,omitempty"` // temp for cpu plot. will remove later
 }
 

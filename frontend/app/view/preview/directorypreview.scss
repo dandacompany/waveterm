@@ -204,3 +204,34 @@
         gap: 10px;
     }
 }
+
+.dir-preview-root {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+.dir-preview-root.dir-preview-treemode {
+    flex-direction: row;
+}
+
+.dir-preview-treemode .dir-tree-sidebar {
+    width: 240px;
+    min-width: 120px;
+    max-width: 50%;
+    flex-shrink: 0;
+    overflow: auto;
+    border-right: 1px solid var(--border-color);
+    resize: horizontal;
+}
+
+.dir-preview-treemode .dir-preview-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.dir-tree-panel {
+    padding: 4px;
+}

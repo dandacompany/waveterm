@@ -7,7 +7,7 @@ import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { BlockHeaderSuggestionControl } from "@/app/suggestion/suggestion";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { getApi } from "@/store/global";
-import { isBlank, makeConnRoute } from "@/util/util";
+import { fireAndForget, isBlank, makeConnRoute } from "@/util/util";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect } from "react";
 import { CSVView } from "./csvview";
@@ -120,6 +120,16 @@ function PreviewView({
         }
         setErrorMsg(null);
     }, [connection, fileInfo]);
+
+    useEffect(() => {
+        if (!fileInfo || fileInfo.isdir) {
+            return;
+        }
+        const interval = setInterval(() => {
+            fireAndForget(() => model.checkForExternalUpdate());
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [fileInfo]);
 
     if (connStatus?.status != "connected") {
         return null;
