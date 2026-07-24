@@ -23,14 +23,49 @@ import (
 	"github.com/wavetermdev/waveterm/pkg/util/fileutil"
 	"github.com/wavetermdev/waveterm/pkg/util/utilfn"
 	"github.com/wavetermdev/waveterm/pkg/wavebase"
+	"github.com/wavetermdev/waveterm/pkg/wps"
 	"github.com/wavetermdev/waveterm/pkg/wshrpc"
 	"github.com/wavetermdev/waveterm/pkg/wshrpc/wshclient"
 	"github.com/wavetermdev/waveterm/pkg/wshutil"
 )
 
-const RemoteFileTransferSizeLimit = 32 * 1024 * 1024
-
 var DisableRecursiveFileOpts = true
+
+const copyProgressInterval = 100 * time.Millisecond
+
+// publishCopyProgress emits a FileCopyProgress event scoped by copyId. Only the wavesrv-side of a
+// copy reaches the frontend; a remote wsh has no broker route, so its publish is a harmless no-op.
+func publishCopyProgress(copyId string, bytes, total int64, done bool, errStr string) {
+	if copyId == "" {
+		return
+	}
+	wps.Broker.Publish(wps.WaveEvent{
+		Event:  wps.Event_FileCopyProgress,
+		Scopes: []string{copyId},
+		Data:   wshrpc.FileCopyProgressData{CopyId: copyId, Bytes: bytes, Total: total, Done: done, Error: errStr},
+	})
+}
+
+// progressReader wraps a reader and emits throttled FileCopyProgress events as bytes flow through.
+type progressReader struct {
+	reader  io.Reader
+	copyId  string
+	total   int64
+	read    int64
+	lastPub time.Time
+}
+
+func (pr *progressReader) Read(p []byte) (int, error) {
+	n, err := pr.reader.Read(p)
+	if n > 0 {
+		pr.read += int64(n)
+		if time.Since(pr.lastPub) >= copyProgressInterval {
+			pr.lastPub = time.Now()
+			publishCopyProgress(pr.copyId, pr.read, pr.total, false, "")
+		}
+	}
+	return n, err
+}
 
 // prepareDestForCopy resolves the final destination path and handles overwrite logic.
 // destPath is the raw destination path (may be a directory or file path).
@@ -72,16 +107,13 @@ func prepareDestForCopy(destPath string, srcBaseName string, destHasSlash bool, 
 
 // remoteCopyFileInternal copies FROM local (this host) TO local (this host)
 // Only supports copying files, not directories
-func remoteCopyFileInternal(srcUri, destUri string, srcPathCleaned, destPathCleaned string, destHasSlash bool, overwrite bool) error {
+func remoteCopyFileInternal(srcUri, destUri string, srcPathCleaned, destPathCleaned string, destHasSlash bool, overwrite bool, copyId string) error {
 	srcFileStat, err := os.Stat(srcPathCleaned)
 	if err != nil {
 		return fmt.Errorf("cannot stat file %q: %w", srcPathCleaned, err)
 	}
 	if srcFileStat.IsDir() {
 		return fmt.Errorf("copying directories is not supported")
-	}
-	if srcFileStat.Size() > RemoteFileTransferSizeLimit {
-		return fmt.Errorf("file %q size %d exceeds transfer limit of %d bytes", srcPathCleaned, srcFileStat.Size(), RemoteFileTransferSizeLimit)
 	}
 
 	destFilePath, err := prepareDestForCopy(destPathCleaned, filepath.Base(srcPathCleaned), destHasSlash, overwrite)
@@ -101,9 +133,12 @@ func remoteCopyFileInternal(srcUri, destUri string, srcPathCleaned, destPathClea
 	}
 	defer destFile.Close()
 
-	if _, err = io.Copy(destFile, srcFile); err != nil {
+	pr := &progressReader{reader: srcFile, copyId: copyId, total: srcFileStat.Size(), lastPub: time.Now()}
+	if _, err = io.Copy(destFile, pr); err != nil {
+		publishCopyProgress(copyId, pr.read, srcFileStat.Size(), true, err.Error())
 		return fmt.Errorf("cannot copy %q to %q: %w", srcUri, destUri, err)
 	}
+	publishCopyProgress(copyId, srcFileStat.Size(), srcFileStat.Size(), true, "")
 	return nil
 }
 
@@ -133,7 +168,7 @@ func (impl *ServerImpl) RemoteFileCopyCommand(ctx context.Context, data wshrpc.C
 
 	if srcConn.Host == destConn.Host {
 		srcPathCleaned := filepath.Clean(wavebase.ExpandHomeDirSafe(srcConn.Path))
-		err := remoteCopyFileInternal(data.SrcUri, data.DestUri, srcPathCleaned, destPathCleaned, destHasSlash, opts.Overwrite)
+		err := remoteCopyFileInternal(data.SrcUri, data.DestUri, srcPathCleaned, destPathCleaned, destHasSlash, opts.Overwrite, data.CopyId)
 		return false, err
 	}
 
@@ -152,9 +187,6 @@ func (impl *ServerImpl) RemoteFileCopyCommand(ctx context.Context, data wshrpc.C
 	}
 	if srcFileInfo.IsDir {
 		return false, fmt.Errorf("copying directories is not supported")
-	}
-	if srcFileInfo.Size > RemoteFileTransferSizeLimit {
-		return false, fmt.Errorf("file %q size %d exceeds transfer limit of %d bytes", data.SrcUri, srcFileInfo.Size, RemoteFileTransferSizeLimit)
 	}
 
 	destFilePath, err := prepareDestForCopy(destPathCleaned, fspath.Base(srcConn.Path), destHasSlash, opts.Overwrite)
@@ -182,13 +214,18 @@ func (impl *ServerImpl) RemoteFileCopyCommand(ctx context.Context, data wshrpc.C
 	streamData := wshrpc.CommandRemoteFileStreamData{
 		Path:       srcConn.Path,
 		StreamMeta: *streamMeta,
+		CopyId:     data.CopyId,
+		TotalSize:  srcFileInfo.Size,
 	}
 	if _, err = wshclient.RemoteFileStreamCommand(wshfs.RpcClient, streamData, &wshrpc.RpcOpts{Route: writerRouteId}); err != nil {
 		return false, fmt.Errorf("error starting file stream for %q: %w", data.SrcUri, err)
 	}
-	if _, err = io.Copy(destFile, reader); err != nil {
+	pr := &progressReader{reader: reader, copyId: data.CopyId, total: srcFileInfo.Size, lastPub: time.Now()}
+	if _, err = io.Copy(destFile, pr); err != nil {
+		publishCopyProgress(data.CopyId, pr.read, srcFileInfo.Size, true, err.Error())
 		return false, fmt.Errorf("error copying file %q to %q: %w", data.SrcUri, data.DestUri, err)
 	}
+	publishCopyProgress(data.CopyId, srcFileInfo.Size, srcFileInfo.Size, true, "")
 
 	totalTime := time.Since(copyStart).Seconds()
 	totalMegaBytes := float64(srcFileInfo.Size) / 1024 / 1024
@@ -613,6 +650,11 @@ func (impl *ServerImpl) RemoteFileStreamCommand(ctx context.Context, data wshrpc
 		var src io.Reader = file
 		if !byteRange.All && !byteRange.OpenEnd {
 			src = io.LimitReader(file, byteRange.End-byteRange.Start+1)
+		}
+		// during a copy (CopyId set) the read side runs on the source host; when that host is
+		// wavesrv (e.g. local -> remote copy) this is where progress reaches the frontend
+		if data.CopyId != "" {
+			src = &progressReader{reader: src, copyId: data.CopyId, total: data.TotalSize, lastPub: time.Now()}
 		}
 
 		buf := make([]byte, 32*1024)

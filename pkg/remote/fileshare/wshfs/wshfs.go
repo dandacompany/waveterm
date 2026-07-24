@@ -228,7 +228,7 @@ func Move(ctx context.Context, data wshrpc.CommandFileCopyData) error {
 		return fmt.Errorf("error parsing destination connection: %w", err)
 	}
 	if srcConn.Host != destConn.Host {
-		isDir, err := copyInternal(srcConn, destConn, opts)
+		isDir, err := copyInternal(srcConn, destConn, opts, data.CopyId)
 		if err != nil {
 			return fmt.Errorf("cannot copy %q to %q: %w", data.SrcUri, data.DestUri, err)
 		}
@@ -251,7 +251,7 @@ func Copy(ctx context.Context, data wshrpc.CommandFileCopyData) error {
 	if err != nil {
 		return fmt.Errorf("error parsing destination connection: %w", err)
 	}
-	_, err = copyInternal(srcConn, destConn, opts)
+	_, err = copyInternal(srcConn, destConn, opts, data.CopyId)
 	return err
 }
 
@@ -291,7 +291,7 @@ func moveInternal(srcConn, destConn *connparse.Connection, opts *wshrpc.FileCopy
 	return wshclient.RemoteFileMoveCommand(RpcClient, wshrpc.CommandFileCopyData{SrcUri: srcConn.GetFullURI(), DestUri: destConn.GetFullURI(), Opts: opts}, &wshrpc.RpcOpts{Route: wshutil.MakeConnectionRouteId(destConn.Host), Timeout: timeout})
 }
 
-func copyInternal(srcConn, destConn *connparse.Connection, opts *wshrpc.FileCopyOpts) (bool, error) {
+func copyInternal(srcConn, destConn *connparse.Connection, opts *wshrpc.FileCopyOpts, copyId string) (bool, error) {
 	if opts == nil {
 		opts = &wshrpc.FileCopyOpts{}
 	}
@@ -299,5 +299,5 @@ func copyInternal(srcConn, destConn *connparse.Connection, opts *wshrpc.FileCopy
 	if timeout == 0 {
 		timeout = DefaultTimeout.Milliseconds()
 	}
-	return wshclient.RemoteFileCopyCommand(RpcClient, wshrpc.CommandFileCopyData{SrcUri: srcConn.GetFullURI(), DestUri: destConn.GetFullURI(), Opts: opts}, &wshrpc.RpcOpts{Route: wshutil.MakeConnectionRouteId(destConn.Host), Timeout: timeout})
+	return wshclient.RemoteFileCopyCommand(RpcClient, wshrpc.CommandFileCopyData{SrcUri: srcConn.GetFullURI(), DestUri: destConn.GetFullURI(), CopyId: copyId, Opts: opts}, &wshrpc.RpcOpts{Route: wshutil.MakeConnectionRouteId(destConn.Host), Timeout: timeout})
 }

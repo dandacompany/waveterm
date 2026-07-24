@@ -147,6 +147,11 @@ function PreviewView({
         return await fetchSuggestions(env, model, query, ctx);
     };
     const onOsFileDrop = (e: React.DragEvent) => {
+        // directory blocks copy dropped OS files into their current dir (handled in DirectoryPreview);
+        // only non-directory previews open the dropped file as a new block
+        if (fileInfo?.isdir) {
+            return;
+        }
         const files = Array.from(e.dataTransfer?.files ?? []);
         if (files.length === 0) {
             return;

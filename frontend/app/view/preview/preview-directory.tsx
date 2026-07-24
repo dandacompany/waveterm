@@ -5,6 +5,7 @@ import { BookmarksModel } from "@/app/store/bookmarksmodel";
 import { ContextMenuModel } from "@/app/store/contextmenu";
 import { getApi } from "@/app/store/global";
 import { globalStore } from "@/app/store/jotaiStore";
+import { waveEventSubscribeSingle } from "@/app/store/wps";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { checkKeyPressed, isCharacterKeyEvent } from "@/util/keyutil";
@@ -32,6 +33,7 @@ import { useDrag, useDrop } from "react-dnd";
 import { NativeTypes } from "react-dnd-html5-backend";
 import { quote as shellQuote } from "shell-quote";
 import { debounce } from "throttle-debounce";
+import { v7 as uuidv7 } from "uuid";
 import "./directorypreview.scss";
 import { EntryManagerOverlay, EntryManagerOverlayProps, EntryManagerType } from "./entry-manager";
 import { DropMode, dropHintLabel, resolveDropMode } from "./file-drop-mode";
@@ -603,6 +605,7 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
     const dropModeRef = useRef<DropMode>("copy");
     const [dropHint, setDropHint] = useState<string>(null);
+    const [copyProgress, setCopyProgress] = useState<{ name: string; bytes: number; total: number }>(null);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -801,23 +804,41 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
 
     const handleDropTransfer = useCallback(
         async (data: CommandFileCopyData, mode: DropMode) => {
-            if (mode === "move") {
-                try {
-                    await env.rpc.FileMoveCommand(TabRpcClient, data, { timeout: data.opts.timeout });
-                } catch (e) {
-                    setErrorMsg({ status: "Move Failed", text: `${e}`, level: "error" });
+            const copyId = uuidv7();
+            data.copyid = copyId;
+            const srcName = data.srcuri?.split(/[/\\]/).pop() || "file";
+            setCopyProgress({ name: srcName, bytes: 0, total: 0 });
+            const unsub = waveEventSubscribeSingle({
+                eventType: "filecopy:progress",
+                scope: copyId,
+                handler: (e) => {
+                    if (e.data != null) {
+                        setCopyProgress({ name: srcName, bytes: e.data.bytes, total: e.data.total });
+                    }
+                },
+            });
+            try {
+                if (mode === "move") {
+                    try {
+                        await env.rpc.FileMoveCommand(TabRpcClient, data, { timeout: data.opts.timeout });
+                    } catch (e) {
+                        setErrorMsg({ status: "Move Failed", text: `${e}`, level: "error" });
+                    }
+                    model.refreshCallback();
+                    return;
                 }
-                model.refreshCallback();
-                return;
+                await handleDropCopy(data, false);
+            } finally {
+                unsub();
+                setCopyProgress(null);
             }
-            await handleDropCopy(data, false);
         },
-        [handleDropCopy, model.refreshCallback]
+        [handleDropCopy, model.refreshCallback, env.rpc]
     );
 
     const [{ isOver, canDrop }, drop] = useDrop(
         () => ({
-            accept: ["FILE_ITEM", NativeTypes.URL], //a name of file drop type
+            accept: ["FILE_ITEM", NativeTypes.URL, NativeTypes.FILE], //a name of file drop type
             canDrop: (_, monitor) => {
                 if (!monitor.isOver({ shallow: false })) {
                     return false;
@@ -833,6 +854,25 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
             },
             drop: async (draggedFile: DraggedFile, monitor) => {
                 if (monitor.didDrop()) {
+                    return;
+                }
+                // OS files dragged in from Finder/Explorer (native FILE) -> copy each into this directory.
+                // react-dnd's native FILE item exposes File objects, not paths; resolve paths via the electron bridge.
+                if (monitor.getItemType() === NativeTypes.FILE) {
+                    const droppedFiles: File[] = (monitor.getItem() as { files?: File[] })?.files ?? [];
+                    const osPaths = droppedFiles.map((f) => getApi().getPathForFile(f)).filter(Boolean);
+                    if (osPaths.length === 0) {
+                        return;
+                    }
+                    const desturi = await model.formatRemoteUri(dirPath, globalStore.get);
+                    for (const osPath of osPaths) {
+                        const data: CommandFileCopyData = {
+                            srcuri: formatRemoteUri(osPath, null),
+                            desturi,
+                            opts: { timeout: 31536000000 },
+                        };
+                        await handleDropTransfer(data, "copy");
+                    }
                     return;
                 }
                 // resolve the source uri before any await so the broker read (file-drag-get) is
@@ -976,9 +1016,21 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                     newFile={newFile}
                     newDirectory={newDirectory}
                 />
-                {dropHint != null && (
+                {dropHint != null && copyProgress == null && (
                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-accent/10 border-2 border-accent rounded z-10">
                         <span className="bg-accent/80 text-primary rounded px-2 py-1 text-sm">{dropHint}</span>
+                    </div>
+                )}
+                {copyProgress != null && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/30 z-10">
+                        <div className="bg-accent/90 text-primary rounded px-3 py-2 text-sm flex flex-col gap-1 min-w-[200px] max-w-[80%]">
+                            <div className="truncate">Copying {copyProgress.name}…</div>
+                            <div>
+                                {copyProgress.total > 0
+                                    ? `${Math.round((copyProgress.bytes / copyProgress.total) * 100)}% · ${(copyProgress.bytes / 1048576).toFixed(1)} / ${(copyProgress.total / 1048576).toFixed(1)} MB`
+                                    : `${(copyProgress.bytes / 1048576).toFixed(1)} MB`}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

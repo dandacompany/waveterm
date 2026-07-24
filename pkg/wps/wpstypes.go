@@ -34,6 +34,7 @@ const (
 	Event_AIModeConfig        = "waveai:modeconfig"    // type: wconfig.AIModeConfigUpdate
 	Event_BlockJobStatus      = "block:jobstatus"      // type: wshrpc.BlockJobStatusData
 	Event_Badge               = "badge"                // type: baseds.BadgeEvent
+	Event_FileCopyProgress    = "filecopy:progress"    // type: wshrpc.FileCopyProgressData
 )
 
 var AllEvents []string = []string{
@@ -56,6 +57,7 @@ var AllEvents []string = []string{
 	Event_AIModeConfig,
 	Event_BlockJobStatus,
 	Event_Badge,
+	Event_FileCopyProgress,
 }
 
 type WaveEvent struct {

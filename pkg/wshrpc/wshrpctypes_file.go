@@ -115,7 +115,17 @@ type CommandDeleteFileData struct {
 type CommandFileCopyData struct {
 	SrcUri  string        `json:"srcuri"`
 	DestUri string        `json:"desturi"`
+	CopyId  string        `json:"copyid,omitempty"` // caller-generated id to correlate FileCopyProgress events
 	Opts    *FileCopyOpts `json:"opts,omitempty"`
+}
+
+// FileCopyProgressData is published on Event_FileCopyProgress (scoped by CopyId) as a copy streams.
+type FileCopyProgressData struct {
+	CopyId string `json:"copyid"`
+	Bytes  int64  `json:"bytes"`
+	Total  int64  `json:"total"`
+	Done   bool   `json:"done"`
+	Error  string `json:"error,omitempty"`
 }
 
 type FileCopyOpts struct {
@@ -134,6 +144,8 @@ type CommandRemoteFileStreamData struct {
 	Path       string     `json:"path"`
 	ByteRange  string     `json:"byterange,omitempty"`
 	StreamMeta StreamMeta `json:"streammeta"`
+	CopyId     string     `json:"copyid,omitempty"`    // set during a copy so the read side can emit FileCopyProgress
+	TotalSize  int64      `json:"totalsize,omitempty"` // total file size for progress reporting during a copy
 }
 
 type CommandFileStreamData struct {
