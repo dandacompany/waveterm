@@ -20,6 +20,7 @@ import {
     setWasActive,
 } from "./emain-activity";
 import { createBuilderWindow, getAllBuilderWindows, getBuilderWindowByWebContentsId } from "./emain-builder";
+import { openExternalPaths } from "./emain-open-external";
 import { callWithOriginalXdgCurrentDesktopAsync, unamePlatform } from "./emain-platform";
 import { getWaveTabViewByWebContentsId } from "./emain-tabview";
 import { handleCtrlShiftState } from "./emain-util";
@@ -391,6 +392,10 @@ export function initIpcHandlers() {
             console.error("Failed to clear cookies and storage:", e);
             throw e;
         }
+    });
+
+    electron.ipcMain.on("open-external-paths", (_event, paths: string[]) => {
+        fireAndForget(() => openExternalPaths((paths ?? []).map((p) => ({ kind: "file", path: p }))));
     });
 
     electron.ipcMain.on("open-native-path", (event, filePath: string) => {
