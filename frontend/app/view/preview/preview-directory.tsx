@@ -817,7 +817,7 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
 
     const [{ isOver, canDrop }, drop] = useDrop(
         () => ({
-            accept: ["FILE_ITEM", NativeTypes.URL], //a name of file drop type
+            accept: ["FILE_ITEM", NativeTypes.URL, NativeTypes.FILE], //a name of file drop type
             canDrop: (_, monitor) => {
                 if (!monitor.isOver({ shallow: false })) {
                     return false;
@@ -833,6 +833,25 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
             },
             drop: async (draggedFile: DraggedFile, monitor) => {
                 if (monitor.didDrop()) {
+                    return;
+                }
+                // OS files dragged in from Finder/Explorer (native FILE) -> copy each into this directory.
+                // react-dnd's native FILE item exposes File objects, not paths; resolve paths via the electron bridge.
+                if (monitor.getItemType() === NativeTypes.FILE) {
+                    const droppedFiles: File[] = (monitor.getItem() as { files?: File[] })?.files ?? [];
+                    const osPaths = droppedFiles.map((f) => getApi().getPathForFile(f)).filter(Boolean);
+                    if (osPaths.length === 0) {
+                        return;
+                    }
+                    const desturi = await model.formatRemoteUri(dirPath, globalStore.get);
+                    for (const osPath of osPaths) {
+                        const data: CommandFileCopyData = {
+                            srcuri: formatRemoteUri(osPath, null),
+                            desturi,
+                            opts: { timeout: 31536000000 },
+                        };
+                        await handleDropTransfer(data, "copy");
+                    }
                     return;
                 }
                 // resolve the source uri before any await so the broker read (file-drag-get) is
