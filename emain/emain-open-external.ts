@@ -98,7 +98,7 @@ export async function openExternalPaths(items: OpenItem[]): Promise<void> {
         return;
     }
     for (const r of resolved) {
-        await win.openBlockInNewTab({ view: "preview", file: r.path });
+        await win.openBlockInActiveTab({ view: "preview", file: r.path });
     }
     win.show();
     win.focus();
