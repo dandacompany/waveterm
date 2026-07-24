@@ -338,8 +338,18 @@ export class PreviewModel implements ViewModel {
             };
             if (mimeType == "directory") {
                 const showHiddenFiles = get(this.showHiddenFiles);
+                const treeView = get(this.dirTreeView);
                 return [
                     starButton,
+                    {
+                        elemtype: "iconbutton",
+                        icon: "table-columns",
+                        title: treeView ? "Hide Folder Tree" : "Show Folder Tree",
+                        className: treeView ? "text-accent" : undefined,
+                        click: () => {
+                            fireAndForget(() => this.setDirTreeView(!globalStore.get(this.dirTreeView)));
+                        },
+                    },
                     {
                         elemtype: "iconbutton",
                         icon: showHiddenFiles ? "eye" : "eye-slash",
