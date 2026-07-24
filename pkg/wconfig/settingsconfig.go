@@ -1004,6 +1004,40 @@ func MigratePresetsBackgrounds() {
 	log.Printf("migrated %d background presets from presets/bg.json to backgrounds.json\n", len(filtered))
 }
 
+// SeedDefaultFileBookmarks writes the built-in bookmarks into the user's home config on first run.
+// Bookmarks intentionally live in home config (not embedded defaults) so that users can delete them:
+// an embedded default would re-merge on every read and could never be removed. Seeding only when the
+// file is absent distinguishes a fresh install (seed) from a user who deleted every bookmark (don't reseed).
+func SeedDefaultFileBookmarks() {
+	configDirAbsPath := wavebase.GetWaveConfigDir()
+	bookmarksFile := filepath.Join(configDirAbsPath, FileBookmarksFile)
+	if _, err := os.Stat(bookmarksFile); err == nil {
+		return
+	} else if !os.IsNotExist(err) {
+		log.Printf("error checking %s during seed: %v\n", FileBookmarksFile, err)
+		return
+	}
+	seeds := map[string]FileBookmark{
+		"home":      {BookmarkType: "folder", Label: "Home", Path: "~", DisplayOrder: 1},
+		"downloads": {BookmarkType: "folder", Label: "Downloads", Path: "~/Downloads", DisplayOrder: 2},
+		"documents": {BookmarkType: "folder", Label: "Documents", Path: "~/Documents", DisplayOrder: 3},
+	}
+	m := make(waveobj.MetaMapType)
+	for key, bm := range seeds {
+		var err error
+		m, err = UpsertFileBookmarkInMap(m, key, bm)
+		if err != nil {
+			log.Printf("error building default bookmark %q during seed: %v\n", key, err)
+			return
+		}
+	}
+	if err := WriteWaveHomeConfigFile(FileBookmarksFile, m); err != nil {
+		log.Printf("error writing %s during seed: %v\n", FileBookmarksFile, err)
+		return
+	}
+	log.Printf("seeded %d default file bookmarks\n", len(seeds))
+}
+
 // CountCustomWidgets returns the number of custom widgets the user has defined.
 // Custom widgets are identified as widgets whose ID doesn't start with "defwidget@".
 func (fc *FullConfigType) CountCustomWidgets() int {
