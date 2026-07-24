@@ -82,6 +82,17 @@ const config = {
         "dist/bin/**/*", // wavesrv and wsh binaries
         "dist/schema/**/*", // schema files for Monaco editor
     ],
+    protocols: [{ name: "Wave", schemes: ["wave"] }],
+    fileAssociations: [
+        { ext: ["md", "txt", "log", "csv", "json", "xml", "yaml", "yml"], name: "Text Document", role: "Viewer" },
+        { ext: ["pdf"], name: "PDF Document", role: "Viewer" },
+        { ext: ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"], name: "Image", role: "Viewer" },
+        {
+            ext: ["js", "ts", "jsx", "tsx", "py", "go", "rs", "c", "cpp", "h", "java", "sh", "toml", "ini"],
+            name: "Source Code",
+            role: "Viewer",
+        },
+    ],
     mac: {
         target: [
             {
@@ -112,6 +123,7 @@ const config = {
             NSCalendarsUsageDescription: "A CLI application running in Wave wants to use Calendar data.",
             NSLocationUsageDescription: "A CLI application running in Wave wants to use your location information.",
             NSAppleEventsUsageDescription: "A CLI application running in Wave wants to use AppleScript.",
+            CFBundleURLTypes: [{ CFBundleURLName: "Wave Protocol", CFBundleURLSchemes: ["wave"] }],
         },
     },
     linux: {
@@ -127,6 +139,8 @@ const config = {
                 Comment: pkg.description,
                 Keywords: "developer;terminal;emulator;",
                 Categories: "Development;Utility;",
+                MimeType:
+                    "x-scheme-handler/wave;text/markdown;text/plain;application/pdf;image/png;image/jpeg;image/gif;image/svg+xml;image/webp;",
             },
         },
         executableArgs: ["--enable-features", "UseOzonePlatform", "--ozone-platform-hint", "auto"], // Hint Electron to use Ozone abstraction layer for native Wayland support
