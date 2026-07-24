@@ -20,6 +20,8 @@ import {
     setWasActive,
 } from "./emain-activity";
 import { createBuilderWindow, getAllBuilderWindows, getBuilderWindowByWebContentsId } from "./emain-builder";
+import { clearCurrentDrag, getCurrentDrag, setCurrentDrag } from "./emain-filedrag";
+import { openExternalPaths } from "./emain-open-external";
 import { callWithOriginalXdgCurrentDesktopAsync, unamePlatform } from "./emain-platform";
 import { getWaveTabViewByWebContentsId } from "./emain-tabview";
 import { handleCtrlShiftState } from "./emain-util";
@@ -393,6 +395,10 @@ export function initIpcHandlers() {
         }
     });
 
+    electron.ipcMain.on("open-external-paths", (_event, paths: string[]) => {
+        fireAndForget(() => openExternalPaths((paths ?? []).map((p) => ({ kind: "file", path: p }))));
+    });
+
     electron.ipcMain.on("open-native-path", (event, filePath: string) => {
         console.log("open-native-path", filePath);
         filePath = filePath.replace("~", electronApp.getPath("home"));
@@ -507,6 +513,10 @@ export function initIpcHandlers() {
     electron.ipcMain.on("do-refresh", (event) => {
         event.sender.reloadIgnoringCache();
     });
+
+    electron.ipcMain.on("file-drag-start", (_event, payload) => setCurrentDrag(payload));
+    electron.ipcMain.on("file-drag-end", () => clearCurrentDrag());
+    electron.ipcMain.handle("file-drag-get", () => getCurrentDrag());
 
     electron.ipcMain.handle("save-text-file", async (event, fileName: string, content: string) => {
         const ww = electron.BrowserWindow.fromWebContents(event.sender);

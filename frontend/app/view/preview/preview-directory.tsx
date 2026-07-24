@@ -3,6 +3,7 @@
 
 import { BookmarksModel } from "@/app/store/bookmarksmodel";
 import { ContextMenuModel } from "@/app/store/contextmenu";
+import { getApi } from "@/app/store/global";
 import { globalStore } from "@/app/store/jotaiStore";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
@@ -28,10 +29,12 @@ import { PrimitiveAtom, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { OverlayScrollbarsComponent, OverlayScrollbarsComponentRef } from "overlayscrollbars-react";
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
+import { NativeTypes } from "react-dnd-html5-backend";
 import { quote as shellQuote } from "shell-quote";
 import { debounce } from "throttle-debounce";
 import "./directorypreview.scss";
 import { EntryManagerOverlay, EntryManagerOverlayProps, EntryManagerType } from "./entry-manager";
+import { DropMode, dropHintLabel, resolveDropMode } from "./file-drop-mode";
 import {
     cleanMimetype,
     getBestUnit,
@@ -528,9 +531,15 @@ function TableRow({ model, row, focusIndex, setFocusIndex, setSearch, idx, handl
         () => ({
             type: "FILE_ITEM",
             canDrag: true,
-            item: () => dragItem,
+            item: () => {
+                getApi().fileDragStart({ uris: [dragItem.uri], sourceConn: connection ?? "", isDir: dragItem.isDir });
+                return dragItem;
+            },
+            end: () => {
+                getApi().fileDragEnd();
+            },
         }),
-        [dragItem]
+        [dragItem, connection]
     );
 
     const dragRef = useCallback(
@@ -552,6 +561,9 @@ function TableRow({ model, row, focusIndex, setFocusIndex, setSearch, idx, handl
             }}
             onClick={() => setFocusIndex(idx)}
             onContextMenu={(e) => handleFileContextMenu(e, row.original)}
+            onDragStart={(e) => {
+                e.dataTransfer.setData("text/uri-list", dragItem.uri);
+            }}
             ref={dragRef}
         >
             {row.getVisibleCells().map((cell) => (
@@ -589,6 +601,21 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
     const finfo = useAtomValue(model.statFile);
     const dirPath = finfo?.path;
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
+    const dropModeRef = useRef<DropMode>("copy");
+    const [dropHint, setDropHint] = useState<string>(null);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            dropModeRef.current = resolveDropMode({ metaKey: e.metaKey, ctrlKey: e.ctrlKey });
+            setDropHint((h) => (h == null ? h : dropHintLabel(dropModeRef.current, dirPath)));
+        };
+        window.addEventListener("keydown", onKey);
+        window.addEventListener("keyup", onKey);
+        return () => {
+            window.removeEventListener("keydown", onKey);
+            window.removeEventListener("keyup", onKey);
+        };
+    }, [dirPath]);
 
     useEffect(() => {
         model.refreshCallback = () => {
@@ -772,41 +799,84 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
         [model.refreshCallback]
     );
 
-    const [, drop] = useDrop(
-        () => ({
-            accept: "FILE_ITEM", //a name of file drop type
-            canDrop: (_, monitor) => {
-                const dragItem = monitor.getItem<DraggedFile>();
-                // drop if not current dir is the parent directory of the dragged item
-                // requires absolute path
-                if (monitor.isOver({ shallow: false }) && dragItem.absParent !== dirPath) {
-                    return true;
+    const handleDropTransfer = useCallback(
+        async (data: CommandFileCopyData, mode: DropMode) => {
+            if (mode === "move") {
+                try {
+                    await env.rpc.FileMoveCommand(TabRpcClient, data, { timeout: data.opts.timeout });
+                } catch (e) {
+                    setErrorMsg({ status: "Move Failed", text: `${e}`, level: "error" });
                 }
-                return false;
+                model.refreshCallback();
+                return;
+            }
+            await handleDropCopy(data, false);
+        },
+        [handleDropCopy, model.refreshCallback]
+    );
+
+    const [{ isOver, canDrop }, drop] = useDrop(
+        () => ({
+            accept: ["FILE_ITEM", NativeTypes.URL], //a name of file drop type
+            canDrop: (_, monitor) => {
+                if (!monitor.isOver({ shallow: false })) {
+                    return false;
+                }
+                const dragItem = monitor.getItem<DraggedFile>();
+                // local FILE_ITEM: skip when this dir is already the item's parent
+                // requires absolute path
+                if (dragItem?.absParent != null) {
+                    return dragItem.absParent !== dirPath;
+                }
+                // native / cross-window drag (no local item): always allow
+                return true;
             },
             drop: async (draggedFile: DraggedFile, monitor) => {
-                if (!monitor.didDrop()) {
-                    const timeoutYear = 31536000000; // one year
-                    const opts: FileCopyOpts = {
-                        timeout: timeoutYear,
-                    };
-                    const desturi = await model.formatRemoteUri(dirPath, globalStore.get);
-                    const data: CommandFileCopyData = {
-                        srcuri: draggedFile.uri,
-                        desturi,
-                        opts,
-                    };
-                    await handleDropCopy(data, draggedFile.isDir);
+                if (monitor.didDrop()) {
+                    return;
                 }
+                // resolve the source uri before any await so the broker read (file-drag-get) is
+                // dispatched at drop-entry, before the source window's dragend clears currentDrag
+                let srcuri = draggedFile?.uri;
+                if (srcuri == null) {
+                    const brokered = await getApi().fileDragGet();
+                    if (brokered == null || brokered.uris.length === 0) {
+                        return;
+                    }
+                    srcuri = brokered.uris[0];
+                }
+                const timeoutYear = 31536000000; // one year
+                const opts: FileCopyOpts = {
+                    timeout: timeoutYear,
+                };
+                const desturi = await model.formatRemoteUri(dirPath, globalStore.get);
+                const data: CommandFileCopyData = {
+                    srcuri,
+                    desturi,
+                    opts,
+                };
+                await handleDropTransfer(data, dropModeRef.current);
             },
+            collect: (monitor) => ({
+                isOver: monitor.isOver({ shallow: false }),
+                canDrop: monitor.canDrop(),
+            }),
             // TODO: mabe add a hover option?
         }),
-        [dirPath, model.formatRemoteUri, model.refreshCallback]
+        [dirPath, model.formatRemoteUri, model.refreshCallback, handleDropTransfer]
     );
 
     useEffect(() => {
         drop(refs.reference);
     }, [refs.reference]);
+
+    useEffect(() => {
+        if (isOver && canDrop) {
+            setDropHint(dropHintLabel(dropModeRef.current, dirPath));
+        } else {
+            setDropHint(null);
+        }
+    }, [isOver, canDrop, dirPath]);
 
     const dismiss = useDismiss(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([dismiss]);
@@ -882,7 +952,7 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
         <Fragment>
             <div
                 ref={refs.setReference}
-                className="dir-table-container"
+                className={clsx("dir-table-container", "relative", { "outline outline-accent": isOver && canDrop })}
                 onChangeCapture={(e) => {
                     const event = e as React.ChangeEvent<HTMLInputElement>;
                     if (!entryManagerProps) {
@@ -906,6 +976,11 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                     newFile={newFile}
                     newDirectory={newDirectory}
                 />
+                {dropHint != null && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-accent/10 border-2 border-accent rounded z-10">
+                        <span className="bg-accent/80 text-primary rounded px-2 py-1 text-sm">{dropHint}</span>
+                    </div>
+                )}
             </div>
             {entryManagerProps && (
                 <EntryManagerOverlay

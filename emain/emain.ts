@@ -27,6 +27,8 @@ import {
     setWasInFg,
 } from "./emain-activity";
 import { initIpcHandlers } from "./emain-ipc";
+import { bufferOrOpen, flushBufferedOpens, openExternalPaths, setNativeOpenEnabled } from "./emain-open-external";
+import { parseArgvForOpenItems, parseWaveUrl } from "./emain-open-external-parse";
 import { log } from "./emain-log";
 import { initMenuEventSubscriptions, makeAndSetAppMenu, makeDockTaskbar } from "./emain-menu";
 import {
@@ -386,8 +388,27 @@ async function appMain() {
         electronApp.quit();
         return;
     }
-    electronApp.on("second-instance", (_event, argv, workingDirectory) => {
-        console.log("second-instance event, argv:", argv, "workingDirectory:", workingDirectory);
+    electronApp.on("will-finish-launching", () => {
+        electronApp.on("open-file", (event, filePath) => {
+            event.preventDefault();
+            bufferOrOpen([{ kind: "file", path: filePath }]);
+        });
+        electronApp.on("open-url", (event, url) => {
+            event.preventDefault();
+            const item = parseWaveUrl(url);
+            if (item != null) {
+                bufferOrOpen([item]);
+            }
+        });
+    });
+    electronApp.setAsDefaultProtocolClient("wave");
+    electronApp.on("second-instance", (_event, argv) => {
+        console.log("second-instance event, argv:", argv);
+        const items = parseArgvForOpenItems(argv);
+        if (items.length > 0) {
+            fireAndForget(() => openExternalPaths(items));
+            return;
+        }
         fireAndForget(createNewWaveWindow);
     });
     try {
@@ -414,8 +435,11 @@ async function appMain() {
     if (fullConfig?.settings?.["app:confirmquit"] != null) {
         confirmQuit = fullConfig.settings["app:confirmquit"];
     }
+    setNativeOpenEnabled(fullConfig?.settings?.["window:nativeopenhandler"] !== false);
     ensureHotSpareTab(fullConfig);
     await relaunchBrowserWindows();
+    bufferOrOpen(parseArgvForOpenItems(process.argv));
+    await flushBufferedOpens();
     setTimeout(runActiveTimer, 5000); // start active timer, wait 5s just to be safe
     setTimeout(sendDisplaysTDataEvent, 5000);
 

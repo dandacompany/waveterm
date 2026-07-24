@@ -46,6 +46,8 @@ const previewElectronApi: ElectronApi = {
     onBuilderInit: (_callback: (initOpts: BuilderInitOpts) => void) => {},
     sendLog: (_log: string) => {},
     onQuicklook: (_filePath: string) => {},
+    getPathForFile: (_file: File) => "",
+    openExternalPaths: (_paths: string[]) => {},
     openNativePath: (_filePath: string) => {},
     captureScreenshot: (_rect: Electron.Rectangle) => Promise.resolve(""),
     setKeyboardChordMode: () => {},
@@ -59,6 +61,9 @@ const previewElectronApi: ElectronApi = {
     doRefresh: () => {},
     saveTextFile: (_fileName: string, _content: string) => Promise.resolve(false),
     setIsActive: async () => {},
+    fileDragStart: (_payload: { uris: string[]; sourceConn: string; isDir: boolean }) => {},
+    fileDragEnd: () => {},
+    fileDragGet: () => Promise.resolve(null),
 };
 
 function installPreviewElectronApi() {

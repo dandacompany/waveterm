@@ -6,6 +6,7 @@ import { globalStore } from "@/app/store/jotaiStore";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { BlockHeaderSuggestionControl } from "@/app/suggestion/suggestion";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
+import { getApi } from "@/store/global";
 import { isBlank, makeConnRoute } from "@/util/util";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, useEffect } from "react";
@@ -145,10 +146,30 @@ function PreviewView({
     const fetchSuggestionsFn = async (query, ctx) => {
         return await fetchSuggestions(env, model, query, ctx);
     };
+    const onOsFileDrop = (e: React.DragEvent) => {
+        const files = Array.from(e.dataTransfer?.files ?? []);
+        if (files.length === 0) {
+            return;
+        }
+        e.preventDefault();
+        const paths = files.map((f) => getApi().getPathForFile(f)).filter(Boolean);
+        if (paths.length > 0) {
+            getApi().openExternalPaths(paths);
+        }
+    };
 
     return (
         <>
-            <div key="fullpreview" className="flex flex-col w-full overflow-hidden scrollbar-hide-until-hover">
+            <div
+                key="fullpreview"
+                className="flex flex-col w-full overflow-hidden scrollbar-hide-until-hover"
+                onDragOver={(e) => {
+                    if (e.dataTransfer?.types?.includes("Files")) {
+                        e.preventDefault();
+                    }
+                }}
+                onDrop={onOsFileDrop}
+            >
                 {errorMsg && <ErrorOverlay errorMsg={errorMsg} resetOverlay={() => setErrorMsg(null)} />}
                 <div ref={contentRef} className="flex-grow overflow-hidden">
                     <SpecializedView parentRef={contentRef} model={model} />

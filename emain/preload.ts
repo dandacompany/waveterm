@@ -71,8 +71,12 @@ contextBridge.exposeInMainWorld("api", {
     setBuilderWindowAppId: (appId: string) => ipcRenderer.send("set-builder-window-appid", appId),
     doRefresh: () => ipcRenderer.send("do-refresh"),
     getPathForFile: (file: File): string => webUtils.getPathForFile(file),
+    openExternalPaths: (paths) => ipcRenderer.send("open-external-paths", paths),
     saveTextFile: (fileName: string, content: string) => ipcRenderer.invoke("save-text-file", fileName, content),
     setIsActive: () => ipcRenderer.invoke("set-is-active"),
+    fileDragStart: (payload) => ipcRenderer.send("file-drag-start", payload),
+    fileDragEnd: () => ipcRenderer.send("file-drag-end"),
+    fileDragGet: () => ipcRenderer.invoke("file-drag-get"),
 });
 
 // Custom event for "new-window"
