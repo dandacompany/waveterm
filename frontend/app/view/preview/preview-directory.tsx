@@ -29,6 +29,7 @@ import { PrimitiveAtom, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { OverlayScrollbarsComponent, OverlayScrollbarsComponentRef } from "overlayscrollbars-react";
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
+import { NativeTypes } from "react-dnd-html5-backend";
 import { quote as shellQuote } from "shell-quote";
 import { debounce } from "throttle-debounce";
 import "./directorypreview.scss";
@@ -560,6 +561,9 @@ function TableRow({ model, row, focusIndex, setFocusIndex, setSearch, idx, handl
             }}
             onClick={() => setFocusIndex(idx)}
             onContextMenu={(e) => handleFileContextMenu(e, row.original)}
+            onDragStart={(e) => {
+                e.dataTransfer.setData("text/uri-list", dragItem.uri);
+            }}
             ref={dragRef}
         >
             {row.getVisibleCells().map((cell) => (
@@ -813,20 +817,19 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
 
     const [{ isOver, canDrop }, drop] = useDrop(
         () => ({
-            accept: "FILE_ITEM", //a name of file drop type
+            accept: ["FILE_ITEM", NativeTypes.URL], //a name of file drop type
             canDrop: (_, monitor) => {
+                if (!monitor.isOver({ shallow: false })) {
+                    return false;
+                }
                 const dragItem = monitor.getItem<DraggedFile>();
-                // drop if not current dir is the parent directory of the dragged item
+                // local FILE_ITEM: skip when this dir is already the item's parent
                 // requires absolute path
-                if (monitor.isOver({ shallow: false }) && dragItem != null && dragItem.absParent !== dirPath) {
-                    return true;
+                if (dragItem?.absParent != null) {
+                    return dragItem.absParent !== dirPath;
                 }
-                // no local dnd item means this is a cross-context (cross-window) drag,
-                // resolved later via the emain broker in drop()
-                if (monitor.isOver({ shallow: false }) && dragItem == null) {
-                    return true;
-                }
-                return false;
+                // native / cross-window drag (no local item): always allow
+                return true;
             },
             drop: async (draggedFile: DraggedFile, monitor) => {
                 if (monitor.didDrop()) {
