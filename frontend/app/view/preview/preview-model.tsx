@@ -160,6 +160,8 @@ export class PreviewModel implements ViewModel {
     refreshVersion: PrimitiveAtom<number>;
     directorySearchActive: PrimitiveAtom<boolean>;
     refreshCallback: () => void;
+    dirTreeView: Atom<boolean>;
+    dirTreeRoot: Atom<string>;
     pendingLocationAtom: PrimitiveAtom<{ anchor?: string; line?: number }>;
     captureLocationCallback: () => { anchor?: string; line?: number } | null;
     directoryKeyDownHandler: (waveEvent: WaveKeyboardEvent) => boolean;
@@ -183,6 +185,8 @@ export class PreviewModel implements ViewModel {
         this.openFileModalGiveFocusRef = createRef();
         this.manageConnection = atom(true);
         this.blockAtom = this.env.wos.getWaveObjectAtom<Block>(`block:${blockId}`);
+        this.dirTreeView = atom((get) => get(this.blockAtom)?.meta?.["dir:treeview"] ?? false);
+        this.dirTreeRoot = atom((get) => get(this.blockAtom)?.meta?.["dir:treeroot"] ?? "");
         this.markdownShowToc = atom(false);
         this.filterOutNowsh = atom(true);
         this.monacoRef = createRef();
@@ -581,6 +585,16 @@ export class PreviewModel implements ViewModel {
             return;
         }
         this.updateOpenFileModalAndError(!modalOpen);
+    }
+
+    async setDirTreeView(on: boolean) {
+        const blockOref = WOS.makeORef("block", this.blockId);
+        await this.env.services.object.UpdateObjectMeta(blockOref, { "dir:treeview": on });
+    }
+
+    async setDirTreeRoot(path: string) {
+        const blockOref = WOS.makeORef("block", this.blockId);
+        await this.env.services.object.UpdateObjectMeta(blockOref, { "dir:treeroot": path });
     }
 
     async goHistory(newPath: string) {

@@ -154,6 +154,9 @@ const (
 	MetaKey_OnboardingGithubStar             = "onboarding:githubstar"
 	MetaKey_OnboardingLastVersion            = "onboarding:lastversion"
 
+	MetaKey_DirTreeView                      = "dir:treeview"
+	MetaKey_DirTreeRoot                      = "dir:treeroot"
+
 	MetaKey_Count                            = "count"
 )
 
