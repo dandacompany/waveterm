@@ -34,6 +34,8 @@ import { NativeTypes } from "react-dnd-html5-backend";
 import { quote as shellQuote } from "shell-quote";
 import { debounce } from "throttle-debounce";
 import { v7 as uuidv7 } from "uuid";
+import { DirectoryTree } from "./directory-tree";
+import { computeTreeAnchor } from "./directory-tree-utils";
 import "./directorypreview.scss";
 import { EntryManagerOverlay, EntryManagerOverlayProps, EntryManagerType } from "./entry-manager";
 import { DropMode, dropHintLabel, resolveDropMode } from "./file-drop-mode";
@@ -606,6 +608,18 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
     const dropModeRef = useRef<DropMode>("copy");
     const [dropHint, setDropHint] = useState<string>(null);
     const [copyProgress, setCopyProgress] = useState<{ name: string; bytes: number; total: number }>(null);
+    const treeView = useAtomValue(model.dirTreeView);
+    const treeRoot = useAtomValue(model.dirTreeRoot);
+
+    useEffect(() => {
+        if (!treeView || dirPath == null || dirPath == "") {
+            return;
+        }
+        const nextAnchor = computeTreeAnchor(treeRoot, dirPath);
+        if (nextAnchor != treeRoot) {
+            fireAndForget(() => model.setDirTreeRoot(nextAnchor));
+        }
+    }, [treeView, treeRoot, dirPath]);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -990,49 +1004,58 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
 
     return (
         <Fragment>
-            <div
-                ref={refs.setReference}
-                className={clsx("dir-table-container", "relative", { "outline outline-accent": isOver && canDrop })}
-                onChangeCapture={(e) => {
-                    const event = e as React.ChangeEvent<HTMLInputElement>;
-                    if (!entryManagerProps) {
-                        setSearchText(event.target.value.toLowerCase());
-                    }
-                }}
-                {...getReferenceProps()}
-                onContextMenu={(e) => handleFileContextMenu(e)}
-                onClick={() => setEntryManagerProps(undefined)}
-            >
-                <DirectoryTable
-                    model={model}
-                    data={filteredData}
-                    search={searchText}
-                    focusIndex={focusIndex}
-                    setFocusIndex={setFocusIndex}
-                    setSearch={setSearchText}
-                    setSelectedPath={setSelectedPath}
-                    setRefreshVersion={setRefreshVersion}
-                    entryManagerOverlayPropsAtom={entryManagerPropsAtom}
-                    newFile={newFile}
-                    newDirectory={newDirectory}
-                />
-                {dropHint != null && copyProgress == null && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-accent/10 border-2 border-accent rounded z-10">
-                        <span className="bg-accent/80 text-primary rounded px-2 py-1 text-sm">{dropHint}</span>
+            <div className={clsx("dir-preview-root", { "dir-preview-treemode": treeView })}>
+                {treeView && (
+                    <div className="dir-tree-sidebar">
+                        <DirectoryTree model={model} />
                     </div>
                 )}
-                {copyProgress != null && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/30 z-10">
-                        <div className="bg-accent/90 text-primary rounded px-3 py-2 text-sm flex flex-col gap-1 min-w-[200px] max-w-[80%]">
-                            <div className="truncate">Copying {copyProgress.name}…</div>
-                            <div>
-                                {copyProgress.total > 0
-                                    ? `${Math.round((copyProgress.bytes / copyProgress.total) * 100)}% · ${(copyProgress.bytes / 1048576).toFixed(1)} / ${(copyProgress.total / 1048576).toFixed(1)} MB`
-                                    : `${(copyProgress.bytes / 1048576).toFixed(1)} MB`}
+                <div
+                    ref={refs.setReference}
+                    className={clsx("dir-table-container", "relative", "dir-preview-main", {
+                        "outline outline-accent": isOver && canDrop,
+                    })}
+                    onChangeCapture={(e) => {
+                        const event = e as React.ChangeEvent<HTMLInputElement>;
+                        if (!entryManagerProps) {
+                            setSearchText(event.target.value.toLowerCase());
+                        }
+                    }}
+                    {...getReferenceProps()}
+                    onContextMenu={(e) => handleFileContextMenu(e)}
+                    onClick={() => setEntryManagerProps(undefined)}
+                >
+                    <DirectoryTable
+                        model={model}
+                        data={filteredData}
+                        search={searchText}
+                        focusIndex={focusIndex}
+                        setFocusIndex={setFocusIndex}
+                        setSearch={setSearchText}
+                        setSelectedPath={setSelectedPath}
+                        setRefreshVersion={setRefreshVersion}
+                        entryManagerOverlayPropsAtom={entryManagerPropsAtom}
+                        newFile={newFile}
+                        newDirectory={newDirectory}
+                    />
+                    {dropHint != null && copyProgress == null && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-accent/10 border-2 border-accent rounded z-10">
+                            <span className="bg-accent/80 text-primary rounded px-2 py-1 text-sm">{dropHint}</span>
+                        </div>
+                    )}
+                    {copyProgress != null && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-black/30 z-10">
+                            <div className="bg-accent/90 text-primary rounded px-3 py-2 text-sm flex flex-col gap-1 min-w-[200px] max-w-[80%]">
+                                <div className="truncate">Copying {copyProgress.name}…</div>
+                                <div>
+                                    {copyProgress.total > 0
+                                        ? `${Math.round((copyProgress.bytes / copyProgress.total) * 100)}% · ${(copyProgress.bytes / 1048576).toFixed(1)} / ${(copyProgress.total / 1048576).toFixed(1)} MB`
+                                        : `${(copyProgress.bytes / 1048576).toFixed(1)} MB`}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
             {entryManagerProps && (
                 <EntryManagerOverlay
