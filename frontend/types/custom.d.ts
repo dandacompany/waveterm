@@ -450,6 +450,11 @@ declare global {
 
     type DraggedFile = {
         uri: string;
+        // every dragged uri when a multi-selection is dragged; uri stays the row that
+        // started the drag so single-item consumers keep working unchanged
+        uris?: string[];
+        // the same items as plain absolute paths, for drop-target validation
+        paths?: string[];
         absParent: string;
         relName: string;
         isDir: boolean;

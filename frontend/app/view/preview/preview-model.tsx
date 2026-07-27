@@ -160,9 +160,14 @@ export class PreviewModel implements ViewModel {
     refreshVersion: PrimitiveAtom<number>;
     directorySearchActive: PrimitiveAtom<boolean>;
     refreshCallback: () => void;
+    // set by the directory view; lets folder rows and tree nodes run a drop through the
+    // same transfer path (progress overlay included) without threading props four levels
+    folderTransferCallback: (srcuri: string, destDir: string, mode: "copy" | "move") => Promise<void>;
     externalWatchPath: string;
     externalWatchModTime: number;
     externalWatchSize: number;
+    externalDirWatchPath: string;
+    externalDirWatchModTime: number;
     dirTreeView: Atom<boolean>;
     dirTreeRoot: Atom<string>;
     pendingLocationAtom: PrimitiveAtom<{ anchor?: string; line?: number }>;
@@ -520,6 +525,37 @@ export class PreviewModel implements ViewModel {
 
     // Poll the previewed file's stat and live-reload when it changes on disk (local or remote).
     // Skipped while editing or with an unsaved buffer so the user's in-progress edits are never clobbered.
+    // Directory twin of checkForExternalUpdate. A listing only needs the directory's own
+    // mtime, which changes on create/delete/rename inside it; a file's content-only edit
+    // does not move it, so the size column can lag until the next real listing change.
+    async checkForExternalDirUpdate(): Promise<void> {
+        const path = await globalStore.get(this.statFilePath);
+        if (path == null) {
+            return;
+        }
+        let statFile: FileInfo;
+        try {
+            statFile = await this.env.rpc.FileInfoCommand(TabRpcClient, { info: { path } });
+        } catch (e) {
+            return;
+        }
+        if (statFile == null || statFile.notfound || !statFile.isdir) {
+            return;
+        }
+        // re-baseline without reloading when the directory changes, so navigating does
+        // not count as an external edit
+        if (this.externalDirWatchPath != path) {
+            this.externalDirWatchPath = path;
+            this.externalDirWatchModTime = statFile.modtime;
+            return;
+        }
+        if (statFile.modtime == this.externalDirWatchModTime) {
+            return;
+        }
+        this.externalDirWatchModTime = statFile.modtime;
+        globalStore.set(this.refreshVersion, (v) => v + 1);
+    }
+
     async checkForExternalUpdate(): Promise<void> {
         if (globalStore.get(this.editMode)) {
             return;

@@ -6,9 +6,11 @@ import { globalStore } from "@/app/store/jotaiStore";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { fireAndForget } from "@/util/util";
 import { useAtomValue } from "jotai";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { isPathAtOrUnder, normalizeTreePath } from "./directory-tree-utils";
+import { type DropMode } from "./file-drop-mode";
 import { type PreviewModel } from "./preview-model";
+import { useFolderDrop } from "./use-folder-drop";
 
 async function loadChildDirs(model: PreviewModel, path: string, showHidden: boolean): Promise<FileInfo[]> {
     const remotePath = await model.formatRemoteUri(path, globalStore.get);
@@ -50,6 +52,17 @@ function TreeNode({ model, path, name, depth, currentPath, expanded, childrenMap
     const children = childrenMap[normalizeTreePath(path)];
     const nodeState = loadState[normalizeTreePath(path)];
 
+    const transfer = useCallback(
+        (srcuri: string, mode: DropMode) => model.folderTransferCallback?.(srcuri, path, mode) ?? Promise.resolve(),
+        [model, path]
+    );
+    const onHoverExpand = useCallback(() => {
+        if (!expanded.has(normalizeTreePath(path))) {
+            toggle(path);
+        }
+    }, [expanded, path, toggle]);
+    const { isOver, canDrop, dropRef } = useFolderDrop({ targetPath: path, transfer, onHoverExpand });
+
     const onContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -67,7 +80,8 @@ function TreeNode({ model, path, name, depth, currentPath, expanded, childrenMap
     return (
         <div className="dir-tree-node">
             <div
-                className={`flex items-center gap-1 px-1 py-0.5 cursor-pointer rounded hover:bg-hoverbg ${isCurrent ? "bg-accent/20 text-accent" : ""}`}
+                ref={dropRef}
+                className={`flex items-center gap-1 px-1 py-0.5 cursor-pointer rounded hover:bg-hoverbg ${isCurrent ? "bg-accent/20 text-accent" : ""} ${isOver && canDrop ? "outline outline-1 outline-accent bg-accent/30" : ""}`}
                 style={{ paddingLeft: depth * 12 + 4 }}
                 onClick={() => fireAndForget(() => model.goHistory(path))}
                 onContextMenu={onContextMenu}
@@ -127,8 +141,24 @@ const DirectoryTree = memo(({ model }: { model: PreviewModel }) => {
     const [loadState, setLoadState] = useState<{ [path: string]: "loading" | "error" }>({});
     const [reloadNonce, setReloadNonce] = useState(0);
     const prevShowHidden = useRef(showHidden);
+    const refreshVersion = useAtomValue(model.refreshVersion);
+    const prevRefreshVersion = useRef(refreshVersion);
 
     const anchor = normalizeTreePath(treeRoot != "" ? treeRoot : currentPath);
+
+    // A refresh (manual, or the external-change poll) must reach the tree too, or the
+    // sidebar and the file list end up showing different directories. Re-fetch every open
+    // node rather than clearing the cache: clearing would blank any expanded subtree that
+    // is not on the current path, since only that chain gets reloaded by the reveal effect.
+    useEffect(() => {
+        if (prevRefreshVersion.current === refreshVersion) {
+            return;
+        }
+        prevRefreshVersion.current = refreshVersion;
+        for (const key of expanded) {
+            fireAndForget(() => loadInto(key));
+        }
+    }, [refreshVersion]);
 
     const loadInto = async (path: string) => {
         const key = normalizeTreePath(path);

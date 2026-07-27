@@ -34,6 +34,15 @@ import { NativeTypes } from "react-dnd-html5-backend";
 import { quote as shellQuote } from "shell-quote";
 import { debounce } from "throttle-debounce";
 import { v7 as uuidv7 } from "uuid";
+import {
+    dragPaths,
+    emptySelection,
+    isSelected as isPathSelected,
+    pruneSelection,
+    resolveClick,
+    selectAll,
+    type SelectionState,
+} from "./dir-selection";
 import { DirectoryTree } from "./directory-tree";
 import { computeTreeAnchor } from "./directory-tree-utils";
 import "./directorypreview.scss";
@@ -53,6 +62,7 @@ import {
 } from "./preview-directory-utils";
 import { type PreviewModel } from "./preview-model";
 import type { PreviewEnv } from "./previewenv";
+import { useFolderDrop } from "./use-folder-drop";
 
 const PageJumpSize = 20;
 
@@ -94,6 +104,8 @@ interface DirectoryTableProps {
     model: PreviewModel;
     data: FileInfo[];
     search: string;
+    selection: SelectionState;
+    setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
     focusIndex: number;
     setFocusIndex: (_: number) => void;
     setSearch: (_: string) => void;
@@ -110,6 +122,8 @@ function DirectoryTable({
     model,
     data,
     search,
+    selection,
+    setSelection,
     focusIndex,
     setFocusIndex,
     setSearch,
@@ -294,6 +308,8 @@ function DirectoryTable({
                 data={data}
                 table={table}
                 search={search}
+                selection={selection}
+                setSelection={setSelection}
                 focusIndex={focusIndex}
                 setFocusIndex={setFocusIndex}
                 setSearch={setSearch}
@@ -311,6 +327,8 @@ interface TableBodyProps {
     data: Array<FileInfo>;
     table: Table<FileInfo>;
     search: string;
+    selection: SelectionState;
+    setSelection: React.Dispatch<React.SetStateAction<SelectionState>>;
     focusIndex: number;
     setFocusIndex: (_: number) => void;
     setSearch: (_: string) => void;
@@ -324,6 +342,8 @@ function TableBody({
     model,
     table,
     search,
+    selection,
+    setSelection,
     focusIndex,
     setFocusIndex,
     setSearch,
@@ -368,6 +388,22 @@ function TableBody({
         }
     }, [focusIndex]);
 
+    const visiblePaths = table.getRowModel().flatRows.map((r) => r.getValue("path") as string);
+
+    const handleRowClick = useCallback(
+        (idx: number, e: React.MouseEvent) => {
+            setFocusIndex(idx);
+            setSelection((cur) =>
+                resolveClick(cur, visiblePaths, idx, {
+                    metaKey: e.metaKey,
+                    ctrlKey: e.ctrlKey,
+                    shiftKey: e.shiftKey,
+                })
+            );
+        },
+        [visiblePaths, setFocusIndex, setSelection]
+    );
+
     const handleFileContextMenu = useCallback(
         async (e: any, finfo: FileInfo) => {
             e.preventDefault();
@@ -376,6 +412,8 @@ function TableBody({
                 return;
             }
             const fileName = finfo.path.split("/").pop();
+            const selectedPaths = isPathSelected(selection, finfo.path) ? Array.from(selection.paths) : [finfo.path];
+            const multi = selectedPaths.length > 1;
             const menu: ContextMenuItem[] = [
                 {
                     label: "New File",
@@ -403,8 +441,8 @@ function TableBody({
                     click: () => fireAndForget(() => navigator.clipboard.writeText(fileName)),
                 },
                 {
-                    label: "Copy Full File Name",
-                    click: () => fireAndForget(() => navigator.clipboard.writeText(finfo.path)),
+                    label: multi ? `Copy ${selectedPaths.length} Full File Names` : "Copy Full File Name",
+                    click: () => fireAndForget(() => navigator.clipboard.writeText(selectedPaths.join("\n"))),
                 },
                 {
                     label: "Copy File Name (Shell Quoted)",
@@ -443,13 +481,17 @@ function TableBody({
                     type: "separator",
                 },
                 {
-                    label: "Delete",
-                    click: () => handleFileDelete(model, finfo.path, false, setErrorMsg),
+                    label: multi ? `Delete ${selectedPaths.length} Items` : "Delete",
+                    click: () => {
+                        for (const p of selectedPaths) {
+                            handleFileDelete(model, p, false, setErrorMsg);
+                        }
+                    },
                 }
             );
             ContextMenuModel.getInstance().showContextMenu(menu, e);
         },
-        [setRefreshVersion, conn]
+        [setRefreshVersion, conn, selection]
     );
 
     const allRows = table.getRowModel().flatRows;
@@ -490,6 +532,8 @@ function TableBody({
                         setFocusIndex={setFocusIndex}
                         setSearch={setSearch}
                         idx={0}
+                        selection={selection}
+                        onRowClick={handleRowClick}
                         handleFileContextMenu={handleFileContextMenu}
                         key="dotdot"
                     />
@@ -502,6 +546,8 @@ function TableBody({
                         setFocusIndex={setFocusIndex}
                         setSearch={setSearch}
                         idx={dotdotRow ? idx + 1 : idx}
+                        selection={selection}
+                        onRowClick={handleRowClick}
                         handleFileContextMenu={handleFileContextMenu}
                         key={idx}
                     />
@@ -518,10 +564,22 @@ type TableRowProps = {
     setFocusIndex: (_: number) => void;
     setSearch: (_: string) => void;
     idx: number;
+    selection: SelectionState;
+    onRowClick: (idx: number, e: React.MouseEvent) => void;
     handleFileContextMenu: (e: any, finfo: FileInfo) => Promise<void>;
 };
 
-function TableRow({ model, row, focusIndex, setFocusIndex, setSearch, idx, handleFileContextMenu }: TableRowProps) {
+function TableRow({
+    model,
+    row,
+    focusIndex,
+    setFocusIndex,
+    setSearch,
+    idx,
+    selection,
+    onRowClick,
+    handleFileContextMenu,
+}: TableRowProps) {
     const dirPath = useAtomValue(model.statFilePath);
     const connection = useAtomValue(model.connection);
 
@@ -536,26 +594,51 @@ function TableRow({ model, row, focusIndex, setFocusIndex, setSearch, idx, handl
             type: "FILE_ITEM",
             canDrag: true,
             item: () => {
-                getApi().fileDragStart({ uris: [dragItem.uri], sourceConn: connection ?? "", isDir: dragItem.isDir });
-                return dragItem;
+                // dragging a selected row drags the whole selection (Finder/Explorer rule)
+                const paths = dragPaths(selection, row.getValue("path") as string);
+                const uris = paths.map((p) => formatRemoteUri(p, connection));
+                getApi().fileDragStart({ uris, sourceConn: connection ?? "", isDir: dragItem.isDir });
+                return { ...dragItem, uris, paths };
             },
             end: () => {
                 getApi().fileDragEnd();
             },
         }),
-        [dragItem, connection]
+        [dragItem, connection, selection, row]
     );
+
+    const rowPath = row.getValue("path") as string;
+    const isFolderTarget = row.original.isdir;
+    const {
+        isOver: folderIsOver,
+        canDrop: folderCanDrop,
+        dropRef: folderDropRef,
+    } = useFolderDrop({
+        targetPath: isFolderTarget ? rowPath : "",
+        transfer: useCallback(
+            (srcuri: string, mode: DropMode) =>
+                model.folderTransferCallback?.(srcuri, rowPath, mode) ?? Promise.resolve(),
+            [model, rowPath]
+        ),
+    });
 
     const dragRef = useCallback(
         (node: HTMLDivElement | null) => {
             drag(node);
+            if (isFolderTarget) {
+                folderDropRef(node);
+            }
         },
-        [drag]
+        [drag, folderDropRef, isFolderTarget]
     );
 
     return (
         <div
-            className={clsx("dir-table-body-row", { focused: focusIndex === idx })}
+            className={clsx("dir-table-body-row", {
+                focused: focusIndex === idx,
+                selected: isPathSelected(selection, rowPath),
+                "drop-target": isFolderTarget && folderIsOver && folderCanDrop,
+            })}
             data-rowindex={idx}
             onDoubleClick={() => {
                 const newFileName = row.getValue("path") as string;
@@ -563,7 +646,7 @@ function TableRow({ model, row, focusIndex, setFocusIndex, setSearch, idx, handl
                 setSearch("");
                 globalStore.set(model.directorySearchActive, false);
             }}
-            onClick={() => setFocusIndex(idx)}
+            onClick={(e) => onRowClick(idx, e)}
             onContextMenu={(e) => handleFileContextMenu(e, row.original)}
             onDragStart={(e) => {
                 e.dataTransfer.setData("text/uri-list", dragItem.uri);
@@ -596,6 +679,7 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
     const env = useWaveEnv<PreviewEnv>();
     const [searchText, setSearchText] = useState("");
     const [focusIndex, setFocusIndex] = useState(0);
+    const [selection, setSelection] = useState<SelectionState>(emptySelection);
     const [unfilteredData, setUnfilteredData] = useState<FileInfo[]>([]);
     const showHiddenFiles = useAtomValue(model.showHiddenFiles);
     const [selectedPath, setSelectedPath] = useState("");
@@ -697,7 +781,16 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                 globalStore.set(model.directorySearchActive, true);
                 return true;
             }
+            if (checkKeyPressed(waveEvent, "Cmd:a")) {
+                setSelection(selectAll(filteredData.map((f) => f.path)));
+                return true;
+            }
             if (checkKeyPressed(waveEvent, "Escape")) {
+                // clear the selection first so Escape doesn't also drop an active search
+                if (selection.paths.size > 0) {
+                    setSelection(emptySelection());
+                    return true;
+                }
                 setSearchText("");
                 globalStore.set(model.directorySearchActive, false);
                 return;
@@ -752,7 +845,16 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
         return () => {
             model.directoryKeyDownHandler = null;
         };
-    }, [filteredData, selectedPath, searchText]);
+    }, [filteredData, selectedPath, searchText, selection]);
+
+    useEffect(() => {
+        setSelection((cur) =>
+            pruneSelection(
+                cur,
+                filteredData.map((f) => f.path)
+            )
+        );
+    }, [filteredData]);
 
     useEffect(() => {
         if (filteredData.length != 0 && focusIndex > filteredData.length - 1) {
@@ -850,6 +952,23 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
         [handleDropCopy, model.refreshCallback, env.rpc]
     );
 
+    // folder rows and tree nodes run their drops through this same path so the progress
+    // overlay and error handling stay in one place
+    useEffect(() => {
+        model.folderTransferCallback = async (srcuri: string, destDir: string, mode: DropMode) => {
+            const desturi = await model.formatRemoteUri(destDir, globalStore.get);
+            const data: CommandFileCopyData = {
+                srcuri,
+                desturi,
+                opts: { timeout: 31536000000 },
+            };
+            await handleDropTransfer(data, mode);
+        };
+        return () => {
+            model.folderTransferCallback = null;
+        };
+    }, [model, handleDropTransfer]);
+
     const [{ isOver, canDrop }, drop] = useDrop(
         () => ({
             accept: ["FILE_ITEM", NativeTypes.URL, NativeTypes.FILE], //a name of file drop type
@@ -891,25 +1010,30 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                 }
                 // resolve the source uri before any await so the broker read (file-drag-get) is
                 // dispatched at drop-entry, before the source window's dragend clears currentDrag
-                let srcuri = draggedFile?.uri;
-                if (srcuri == null) {
+                let srcuris = draggedFile?.uris?.length > 0 ? draggedFile.uris : null;
+                if (srcuris == null && draggedFile?.uri != null) {
+                    srcuris = [draggedFile.uri];
+                }
+                if (srcuris == null) {
                     const brokered = await getApi().fileDragGet();
                     if (brokered == null || brokered.uris.length === 0) {
                         return;
                     }
-                    srcuri = brokered.uris[0];
+                    srcuris = brokered.uris;
                 }
                 const timeoutYear = 31536000000; // one year
                 const opts: FileCopyOpts = {
                     timeout: timeoutYear,
                 };
                 const desturi = await model.formatRemoteUri(dirPath, globalStore.get);
-                const data: CommandFileCopyData = {
-                    srcuri,
-                    desturi,
-                    opts,
-                };
-                await handleDropTransfer(data, dropModeRef.current);
+                for (const srcuri of srcuris) {
+                    const data: CommandFileCopyData = {
+                        srcuri,
+                        desturi,
+                        opts,
+                    };
+                    await handleDropTransfer(data, dropModeRef.current);
+                }
             },
             collect: (monitor) => ({
                 isOver: monitor.isOver({ shallow: false }),
@@ -1029,6 +1153,8 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                         model={model}
                         data={filteredData}
                         search={searchText}
+                        selection={selection}
+                        setSelection={setSelection}
                         focusIndex={focusIndex}
                         setFocusIndex={setFocusIndex}
                         setSearch={setSearchText}

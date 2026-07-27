@@ -113,6 +113,19 @@
                     padding: 0 6px;
                     min-width: var(--min-row-width);
 
+                    // an active folder drop target must read louder than selection or focus
+                    &.drop-target {
+                        outline: 1px solid var(--accent-color);
+                        background-color: rgb(from var(--accent-color) r g b / 0.35);
+                    }
+
+                    // multi-selected rows sit below the focused row so the focus ring
+                    // stays readable when the focused row is also part of the selection
+                    &.selected {
+                        background-color: rgb(from var(--accent-color) r g b / 0.25);
+                        color: var(--main-text-color);
+                    }
+
                     &.focused {
                         background-color: rgb(from var(--accent-color) r g b / 0.5);
                         color: var(--main-text-color);

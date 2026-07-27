@@ -122,11 +122,12 @@ function PreviewView({
     }, [connection, fileInfo]);
 
     useEffect(() => {
-        if (!fileInfo || fileInfo.isdir) {
+        if (!fileInfo) {
             return;
         }
+        const isDir = fileInfo.isdir;
         const interval = setInterval(() => {
-            fireAndForget(() => model.checkForExternalUpdate());
+            fireAndForget(() => (isDir ? model.checkForExternalDirUpdate() : model.checkForExternalUpdate()));
         }, 2000);
         return () => clearInterval(interval);
     }, [fileInfo]);
