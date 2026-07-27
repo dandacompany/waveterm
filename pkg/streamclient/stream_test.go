@@ -17,8 +17,10 @@ type fakeTransport struct {
 
 func newFakeTransport() *fakeTransport {
 	return &fakeTransport{
-		dataChan: make(chan wshrpc.CommandStreamData, 10),
-		ackChan:  make(chan wshrpc.CommandStreamAckData, 10),
+		// generous buffers: the reader now emits a duplicate ACK per out-of-order packet,
+		// so ack volume is higher than one-per-delivered-packet
+		dataChan: make(chan wshrpc.CommandStreamData, 256),
+		ackChan:  make(chan wshrpc.CommandStreamAckData, 256),
 	}
 }
 

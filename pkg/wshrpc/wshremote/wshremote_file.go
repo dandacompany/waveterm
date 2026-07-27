@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/wavetermdev/waveterm/pkg/panichandler"
@@ -33,6 +34,16 @@ var DisableRecursiveFileOpts = true
 
 const copyProgressInterval = 100 * time.Millisecond
 
+// A large copy has no meaningful upper bound on total duration, so callers pass an
+// effectively infinite timeout (a year). That leaves nothing to catch a transfer that
+// simply stops. Bound *idle* time instead: a transfer that moves no bytes for this long
+// is dead, however large the file.
+const copyIdleTimeout = 60 * time.Second
+const copyIdleCheckInterval = 5 * time.Second
+
+// A stat is not a transfer; it must never inherit the caller's year-long copy timeout.
+const copyStatTimeout = 60 * time.Second
+
 // publishCopyProgress emits a FileCopyProgress event scoped by copyId. Only the wavesrv-side of a
 // copy reaches the frontend; a remote wsh has no broker route, so its publish is a harmless no-op.
 func publishCopyProgress(copyId string, bytes, total int64, done bool, errStr string) {
@@ -48,23 +59,45 @@ func publishCopyProgress(copyId string, bytes, total int64, done bool, errStr st
 
 // progressReader wraps a reader and emits throttled FileCopyProgress events as bytes flow through.
 type progressReader struct {
-	reader  io.Reader
-	copyId  string
-	total   int64
-	read    int64
-	lastPub time.Time
+	reader      io.Reader
+	copyId      string
+	total       int64
+	read        int64
+	lastPub     time.Time
+	lastAdvance atomic.Int64 // unix nanos of the last byte received; read by the idle watchdog
 }
 
 func (pr *progressReader) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
 	if n > 0 {
 		pr.read += int64(n)
+		pr.lastAdvance.Store(time.Now().UnixNano())
 		if time.Since(pr.lastPub) >= copyProgressInterval {
 			pr.lastPub = time.Now()
 			publishCopyProgress(pr.copyId, pr.read, pr.total, false, "")
 		}
 	}
 	return n, err
+}
+
+// watchCopyIdle fails the copy when no bytes have arrived for copyIdleTimeout. It returns
+// when the copy finishes (done closes) so it never outlives the transfer.
+func watchCopyIdle(done <-chan struct{}, pr *progressReader, cancel context.CancelCauseFunc, srcUri string) {
+	ticker := time.NewTicker(copyIdleCheckInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			last := time.Unix(0, pr.lastAdvance.Load())
+			if time.Since(last) < copyIdleTimeout {
+				continue
+			}
+			cancel(fmt.Errorf("copy of %q stalled: no data for %v", srcUri, copyIdleTimeout))
+			return
+		}
+	}
 }
 
 // prepareDestForCopy resolves the final destination path and handles overwrite logic.
@@ -177,11 +210,21 @@ func (impl *ServerImpl) RemoteFileCopyCommand(ctx context.Context, data wshrpc.C
 	if opts.Timeout > 0 {
 		timeout = time.Duration(opts.Timeout) * time.Millisecond
 	}
-	readCtx, timeoutCancel := context.WithTimeoutCause(ctx, timeout, fmt.Errorf("timeout copying file %q to %q", data.SrcUri, data.DestUri))
-	defer timeoutCancel()
+	readCtx, cancelRead := context.WithCancelCause(ctx)
+	defer cancelRead(nil)
+	// keep the caller's timeout as an absolute ceiling, but the real guard is the idle
+	// watchdog started below — total duration is unbounded for a large file, idle time is not
+	readTimer := time.AfterFunc(timeout, func() {
+		cancelRead(fmt.Errorf("timeout copying file %q to %q", data.SrcUri, data.DestUri))
+	})
+	defer readTimer.Stop()
 	copyStart := time.Now()
 
-	srcFileInfo, err := wshclient.RemoteFileInfoCommand(wshfs.RpcClient, srcConn.Path, &wshrpc.RpcOpts{Timeout: opts.Timeout, Route: wshutil.MakeConnectionRouteId(srcConn.Host)})
+	statTimeout := opts.Timeout
+	if statTimeout <= 0 || statTimeout > copyStatTimeout.Milliseconds() {
+		statTimeout = copyStatTimeout.Milliseconds()
+	}
+	srcFileInfo, err := wshclient.RemoteFileInfoCommand(wshfs.RpcClient, srcConn.Path, &wshrpc.RpcOpts{Timeout: statTimeout, Route: wshutil.MakeConnectionRouteId(srcConn.Host)})
 	if err != nil {
 		return false, fmt.Errorf("cannot get info for source file %q: %w", data.SrcUri, err)
 	}
@@ -221,7 +264,15 @@ func (impl *ServerImpl) RemoteFileCopyCommand(ctx context.Context, data wshrpc.C
 		return false, fmt.Errorf("error starting file stream for %q: %w", data.SrcUri, err)
 	}
 	pr := &progressReader{reader: reader, copyId: data.CopyId, total: srcFileInfo.Size, lastPub: time.Now()}
-	if _, err = io.Copy(destFile, pr); err != nil {
+	pr.lastAdvance.Store(time.Now().UnixNano())
+	copyDone := make(chan struct{})
+	go watchCopyIdle(copyDone, pr, cancelRead, data.SrcUri)
+	_, err = io.Copy(destFile, pr)
+	close(copyDone)
+	if err != nil {
+		if cause := context.Cause(readCtx); cause != nil && cause != context.Canceled {
+			err = cause
+		}
 		publishCopyProgress(data.CopyId, pr.read, srcFileInfo.Size, true, err.Error())
 		return false, fmt.Errorf("error copying file %q to %q: %w", data.SrcUri, data.DestUri, err)
 	}
@@ -662,6 +713,10 @@ func (impl *ServerImpl) RemoteFileStreamCommand(ctx context.Context, data wshrpc
 			n, readErr := src.Read(buf)
 			if n > 0 {
 				if _, writeErr := writer.Write(buf[:n]); writeErr != nil {
+					// must close *with* the error: a plain return falls through to the
+					// deferred Close(), which the destination reads as a clean EOF and
+					// reports a truncated file as a complete copy
+					writer.CloseWithError(fmt.Errorf("error streaming file %q: %w", data.Path, writeErr))
 					return
 				}
 			}

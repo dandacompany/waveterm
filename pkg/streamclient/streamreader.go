@@ -49,11 +49,18 @@ func (r *Reader) RecvData(dataPk wshrpc.CommandStreamData) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	if r.closed || r.eof || r.err != nil {
+	if dataPk.Id != r.id {
 		return
 	}
 
-	if dataPk.Id != r.id {
+	if r.closed || r.err != nil {
+		return
+	}
+
+	if r.eof {
+		// already finished. re-ACK the fin so that a lost fin-ACK doesn't leave the writer
+		// retransmitting EOF until it gives up and fails an otherwise complete transfer.
+		r.sendAckLocked(true, false, "")
 		return
 	}
 
@@ -69,7 +76,11 @@ func (r *Reader) RecvData(dataPk wshrpc.CommandStreamData) {
 		return
 	}
 	if dataPk.Seq > r.nextSeq {
+		// A gap: park the packet and re-ACK the sequence we are still missing. The duplicate
+		// ACK is the only signal the writer gets that something was dropped — without it a
+		// single lost packet silences the reader permanently and deadlocks the transfer.
 		r.addOOOPacketLocked(dataPk)
+		r.sendAckLocked(false, false, "")
 		return
 	}
 
@@ -119,6 +130,12 @@ func (r *Reader) processOOOPacketsLocked() {
 			// we're done, so we can clear any pending ooo packets
 			r.oooPackets = nil
 			return
+		}
+		// a retransmit can cover ground already delivered, leaving parked packets behind
+		// nextSeq; drop them rather than breaking the loop and leaking them forever
+		if pkt.Seq < r.nextSeq {
+			consumed++
+			continue
 		}
 		if pkt.Seq != r.nextSeq {
 			break

@@ -2,6 +2,7 @@ package streamclient
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -157,7 +158,11 @@ func (b *Broker) processSendAck(ackPk wshrpc.CommandStreamAckData) {
 		Route:      route,
 		NoResponse: true,
 	}
-	b.rpcClient.StreamDataAckCommand(ackPk, opts)
+	// a dropped ACK is recoverable (the writer retransmits and the reader re-ACKs), but it
+	// must never be swallowed silently — this is how transfers used to stall with no trace
+	if err := b.rpcClient.StreamDataAckCommand(ackPk, opts); err != nil {
+		log.Printf("stream %s: ack send failed (seq=%d): %v\n", ackPk.Id, ackPk.Seq, err)
+	}
 
 	if ackPk.Fin || ackPk.Cancel {
 		b.cleanupReader(ackPk.Id)
@@ -173,7 +178,9 @@ func (b *Broker) processSendData(dataPk wshrpc.CommandStreamData) {
 		Route:      route,
 		NoResponse: true,
 	}
-	b.rpcClient.StreamDataCommand(dataPk, opts)
+	if err := b.rpcClient.StreamDataCommand(dataPk, opts); err != nil {
+		log.Printf("stream %s: data send failed (seq=%d): %v\n", dataPk.Id, dataPk.Seq, err)
+	}
 }
 
 func (b *Broker) processRecvData(dataPk wshrpc.CommandStreamData) {
