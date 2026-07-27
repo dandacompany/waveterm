@@ -505,14 +505,21 @@ export class TermWrap {
         });
     }
 
+    // Wave's custom key handler runs BEFORE xterm's CompositionHelper, and returning false
+    // makes xterm return early — skipping _finalizeComposition, whose whole job is to emit
+    // the composed text before a key like Enter is acted on. So while a composition is
+    // active (or has just ended) we must defer every non-shortcut key to xterm, not just
+    // short "suffix-looking" ones. The previous length<=4 filter excluded "Enter" itself,
+    // which is exactly the key that needs the finalizer to run.
     shouldBypassWaveKeydownForComposition(event: KeyboardEvent): boolean {
+        if (event.ctrlKey || event.metaKey || event.altKey) {
+            // real shortcuts still belong to Wave, even mid-composition
+            return false;
+        }
         if (this.compositionActive) {
             return true;
         }
-        if (Date.now() > this.compositionRecentlyEndedUntil) {
-            return false;
-        }
-        return !event.ctrlKey && !event.metaKey && !event.altKey && this.isCompositionSuffixData(event.key);
+        return Date.now() <= this.compositionRecentlyEndedUntil;
     }
 
     sendTermData(data: string) {
@@ -591,14 +598,21 @@ export class TermWrap {
         return true;
     }
 
+    // Only ever holds back "\r", never arbitrary text. xterm now emits the committed
+    // syllable before the Enter (verified in a trace: "용" at t, "\r" at t+1ms), so the
+    // byte order is already correct — but a TUI that updates its input state asynchronously
+    // (Ink/React) can still process the Enter against pre-commit state when the two writes
+    // land a millisecond apart. A short gap after the commit is what makes that safe, and
+    // it is the reason typing a space "fixes" the input by hand.
+    //
+    // The previous implementation deferred arbitrary data on the same timer, which is what
+    // allowed a buffered line to be replayed in bulk after a fast Han/Eng switch. Holding
+    // only the carriage return keeps the gap without ever buffering text.
     shouldDeferCompositionData(data: string): boolean {
-        if (this.compositionActive) {
-            return data === "\r";
-        }
-        if (Date.now() > this.compositionRecentlyEndedUntil) {
+        if (data !== "\r") {
             return false;
         }
-        return data === "\r" || this.isCompositionSuffixData(data);
+        return this.compositionActive || Date.now() <= this.compositionRecentlyEndedUntil;
     }
 
     handleTermData(data: string) {

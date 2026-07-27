@@ -86,3 +86,113 @@ describe("TermWrap IME data ordering", () => {
         expect(sent).toEqual(["previous sentence"]);
     });
 });
+
+describe("TermWrap IME keydown deferral", () => {
+    let originalDocument: Document;
+
+    beforeEach(() => {
+        originalDocument = globalThis.document;
+        vi.stubGlobal("document", {
+            createElement: () => ({
+                getContext: () => null,
+            }),
+        });
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        if (originalDocument != null) {
+            vi.stubGlobal("document", originalDocument);
+        }
+        vi.resetModules();
+    });
+
+    async function makeKeydownHarness() {
+        const { TermWrap } = await import("./termwrap");
+        const termWrap = Object.create(TermWrap.prototype) as InstanceType<typeof TermWrap>;
+        termWrap.compositionActive = false;
+        termWrap.compositionRecentlyEndedUntil = 0;
+        return termWrap;
+    }
+
+    function key(k: string, mods: Partial<KeyboardEvent> = {}): KeyboardEvent {
+        return { key: k, ctrlKey: false, metaKey: false, altKey: false, ...mods } as KeyboardEvent;
+    }
+
+    // Regression for the 받침-less Enter bug: Wave used to claim Enter, which made xterm
+    // return early and skip _finalizeComposition, so the syllable landed after the newline.
+    it("defers Enter to xterm while a composition is active", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = true;
+        expect(termWrap.shouldBypassWaveKeydownForComposition(key("Enter"))).toBe(true);
+    });
+
+    it("defers Enter to xterm in the window just after compositionend", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = false;
+        termWrap.compositionRecentlyEndedUntil = Date.now() + 75;
+        expect(termWrap.shouldBypassWaveKeydownForComposition(key("Enter"))).toBe(true);
+    });
+
+    it("defers any composing key, not only short ones", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = true;
+        for (const k of ["Enter", "Backspace", "ArrowLeft", "a", "1"]) {
+            expect(termWrap.shouldBypassWaveKeydownForComposition(key(k))).toBe(true);
+        }
+    });
+
+    it("keeps real shortcuts for Wave even mid-composition", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = true;
+        expect(termWrap.shouldBypassWaveKeydownForComposition(key("t", { metaKey: true }))).toBe(false);
+        expect(termWrap.shouldBypassWaveKeydownForComposition(key("c", { ctrlKey: true }))).toBe(false);
+        expect(termWrap.shouldBypassWaveKeydownForComposition(key("f", { altKey: true }))).toBe(false);
+    });
+
+    it("hands keys back to Wave once composition is well over", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = false;
+        termWrap.compositionRecentlyEndedUntil = Date.now() - 1000;
+        expect(termWrap.shouldBypassWaveKeydownForComposition(key("Enter"))).toBe(false);
+    });
+
+    // Regression for the Han/Eng bulk re-input bug: only the carriage return may ever be
+    // held back. Buffering arbitrary text is what allowed a whole line to be replayed.
+    it("never defers text, in or out of a composition", async () => {
+        const termWrap = await makeKeydownHarness();
+        for (const [active, until] of [
+            [true, 0],
+            [false, Date.now() + 75],
+            [false, 0],
+        ] as [boolean, number][]) {
+            termWrap.compositionActive = active;
+            termWrap.compositionRecentlyEndedUntil = until;
+            expect(termWrap.shouldDeferCompositionData("hello")).toBe(false);
+            expect(termWrap.shouldDeferCompositionData("가")).toBe(false);
+            expect(termWrap.shouldDeferCompositionData("안녕하세요")).toBe(false);
+        }
+    });
+
+    it("holds Enter while composing", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = true;
+        expect(termWrap.shouldDeferCompositionData("\r")).toBe(true);
+    });
+
+    // The committed syllable and the Enter land ~1ms apart; a TUI that updates its input
+    // state asynchronously needs that gap or it submits against pre-commit state.
+    it("holds Enter in the window just after the composition commits", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = false;
+        termWrap.compositionRecentlyEndedUntil = Date.now() + 75;
+        expect(termWrap.shouldDeferCompositionData("\r")).toBe(true);
+    });
+
+    it("passes Enter straight through once the composition window has passed", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = false;
+        termWrap.compositionRecentlyEndedUntil = Date.now() - 1000;
+        expect(termWrap.shouldDeferCompositionData("\r")).toBe(false);
+    });
+});
