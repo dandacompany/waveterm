@@ -598,21 +598,27 @@ export class TermWrap {
         return true;
     }
 
-    // Only ever holds back "\r", never arbitrary text. xterm now emits the committed
-    // syllable before the Enter (verified in a trace: "용" at t, "\r" at t+1ms), so the
-    // byte order is already correct — but a TUI that updates its input state asynchronously
-    // (Ink/React) can still process the Enter against pre-commit state when the two writes
-    // land a millisecond apart. A short gap after the commit is what makes that safe, and
-    // it is the reason typing a space "fixes" the input by hand.
+    // While composing, only "\r" is ever held back. In the short window after
+    // compositionend, short printable-ASCII chunks are held too: on Windows the MS Korean
+    // IME reports every key as 229/Process, so a terminating space or punctuation reaches
+    // xterm as a bare textarea `input` event. When the keyup for that key lands before the
+    // input event, xterm sends the terminator immediately while the committed syllable is
+    // still waiting in _finalizeComposition's setTimeout(0) — the space overtakes the
+    // syllable ("안되고 " arrives as " 고..."). Holding the terminator for one flush cycle
+    // lets handleTermData put it back behind the syllable. macOS never hits this because
+    // terminators arrive as real keycodes there, which flush the composition synchronously.
     //
-    // The previous implementation deferred arbitrary data on the same timer, which is what
-    // allowed a buffered line to be replayed in bulk after a fast Han/Eng switch. Holding
-    // only the carriage return keeps the gap without ever buffering text.
+    // Never hold text while composing and never hold more than a few ASCII chars total:
+    // buffering arbitrary text on this timer is what once replayed a whole line in bulk
+    // after a fast Han/Eng switch.
     shouldDeferCompositionData(data: string): boolean {
-        if (data !== "\r") {
+        if (this.compositionActive) {
+            return data === "\r";
+        }
+        if (Date.now() > this.compositionRecentlyEndedUntil) {
             return false;
         }
-        return this.compositionActive || Date.now() <= this.compositionRecentlyEndedUntil;
+        return data === "\r" || this.isCompositionSuffixData(data);
     }
 
     handleTermData(data: string) {
@@ -628,10 +634,17 @@ export class TermWrap {
                 }
                 this.pendingCompositionSuffix = null;
                 this.sendTermData(data);
-                this.sendTermData(pendingData);
+                // On Windows the late composition chunk is re-read from the textarea, so
+                // it already contains the terminator we held back — don't send it twice.
+                if (!data.endsWith(pendingData)) {
+                    this.sendTermData(pendingData);
+                }
                 return;
             }
-            if (this.shouldDeferCompositionData(data)) {
+            if (
+                this.shouldDeferCompositionData(data) &&
+                this.pendingCompositionSuffix.data.length + data.length <= MaxCompositionSuffixLength
+            ) {
                 if (this.pendingCompositionSuffix.timeout != null) {
                     clearTimeout(this.pendingCompositionSuffix.timeout);
                     this.pendingCompositionSuffix.timeout = null;

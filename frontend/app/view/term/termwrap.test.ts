@@ -85,6 +85,52 @@ describe("TermWrap IME data ordering", () => {
 
         expect(sent).toEqual(["previous sentence"]);
     });
+
+    // Windows 229/Process ordering: the terminator overtakes the syllable and the late
+    // syllable chunk (re-read from the textarea) already contains the terminator.
+    it("reorders a held terminator behind the syllable and drops the duplicate", async () => {
+        const { sent, termWrap } = await makeTermWrapHarness();
+
+        termWrap.compositionRecentlyEndedUntil = Date.now() + 75;
+        termWrap.handleTermData(" ");
+        expect(sent).toEqual([]);
+
+        termWrap.handleTermData("고 ");
+        expect(sent).toEqual(["고 "]);
+    });
+
+    it("reorders a held terminator behind a syllable chunk that does not contain it", async () => {
+        const { sent, termWrap } = await makeTermWrapHarness();
+
+        termWrap.compositionRecentlyEndedUntil = Date.now() + 75;
+        termWrap.handleTermData("?");
+        termWrap.handleTermData("다");
+
+        expect(sent).toEqual(["다", "?"]);
+    });
+
+    it("flushes a held terminator on the timer when no syllable follows", async () => {
+        const { sent, termWrap } = await makeTermWrapHarness();
+
+        termWrap.compositionRecentlyEndedUntil = Date.now() + 75;
+        termWrap.handleTermData(" ");
+        expect(sent).toEqual([]);
+
+        vi.advanceTimersByTime(30);
+        expect(sent).toEqual([" "]);
+    });
+
+    it("caps the held buffer instead of accumulating a whole line", async () => {
+        const { sent, termWrap } = await makeTermWrapHarness();
+
+        termWrap.compositionRecentlyEndedUntil = Date.now() + 5000;
+        termWrap.handleTermData("ab");
+        termWrap.handleTermData("cd");
+        expect(sent).toEqual([]);
+
+        termWrap.handleTermData("ef");
+        expect(sent).toEqual(["abcd"]);
+    });
 });
 
 describe("TermWrap IME keydown deferral", () => {
@@ -157,9 +203,10 @@ describe("TermWrap IME keydown deferral", () => {
         expect(termWrap.shouldBypassWaveKeydownForComposition(key("Enter"))).toBe(false);
     });
 
-    // Regression for the Han/Eng bulk re-input bug: only the carriage return may ever be
-    // held back. Buffering arbitrary text is what allowed a whole line to be replayed.
-    it("never defers text, in or out of a composition", async () => {
+    // Regression for the Han/Eng bulk re-input bug: never hold long runs of text or any
+    // Hangul. Only "\r" (while composing) and short ASCII terminators (in the post-commit
+    // window, for the Windows 229/Process orderings) may be held.
+    it("never defers long text or Hangul, in or out of a composition", async () => {
         const termWrap = await makeKeydownHarness();
         for (const [active, until] of [
             [true, 0],
@@ -172,6 +219,24 @@ describe("TermWrap IME keydown deferral", () => {
             expect(termWrap.shouldDeferCompositionData("가")).toBe(false);
             expect(termWrap.shouldDeferCompositionData("안녕하세요")).toBe(false);
         }
+    });
+
+    // Windows MS Korean IME reports every key as 229/Process, so a terminating space or
+    // punctuation can be emitted by xterm before the committed syllable's async flush.
+    // Holding it briefly in the post-commit window lets handleTermData reorder it.
+    it("defers short ASCII terminators only in the post-commit window", async () => {
+        const termWrap = await makeKeydownHarness();
+        termWrap.compositionActive = false;
+        termWrap.compositionRecentlyEndedUntil = Date.now() + 75;
+        expect(termWrap.shouldDeferCompositionData(" ")).toBe(true);
+        expect(termWrap.shouldDeferCompositionData("?")).toBe(true);
+
+        termWrap.compositionActive = true;
+        termWrap.compositionRecentlyEndedUntil = 0;
+        expect(termWrap.shouldDeferCompositionData(" ")).toBe(false);
+
+        termWrap.compositionActive = false;
+        expect(termWrap.shouldDeferCompositionData(" ")).toBe(false);
     });
 
     it("holds Enter while composing", async () => {
