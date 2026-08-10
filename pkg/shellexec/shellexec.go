@@ -46,6 +46,18 @@ type CommandOptsType struct {
 	ForceJwt    bool                      `json:"forcejwt,omitempty"`
 }
 
+func makeWslCommandArgs(distroName string, cwd string, commandArgs ...string) []string {
+	if cwd == "" {
+		cwd = "~"
+	}
+	args := []string{"--distribution", distroName, "--cd", cwd}
+	if len(commandArgs) > 0 {
+		args = append(args, "--")
+		args = append(args, commandArgs...)
+	}
+	return args
+}
+
 type ShellProc struct {
 	ConnName  string
 	Cmd       ConnInterface
@@ -156,7 +168,8 @@ func StartWslShellProcNoWsh(ctx context.Context, termSize waveobj.TermSize, cmdS
 	client := conn.GetClient()
 	conn.Infof(ctx, "WSL-NEWSESSION (StartWslShellProcNoWsh)")
 
-	ecmd := exec.Command("wsl.exe", "~", "-d", client.Name())
+	wslArgs := makeWslCommandArgs(client.Name(), cmdOpts.Cwd)
+	ecmd := exec.Command("wsl.exe", wslArgs...)
 
 	if termSize.Rows == 0 || termSize.Cols == 0 {
 		termSize.Rows = shellutil.DefaultTermRows
@@ -274,7 +287,8 @@ func StartWslShellProc(ctx context.Context, termSize waveobj.TermSize, cmdStr st
 		cmdCombined = fmt.Sprintf(`%s=%s %s`, wavebase.WaveJwtTokenVarName, jwtToken, cmdCombined)
 	}
 	log.Printf("full combined command: %s", cmdCombined)
-	ecmd := exec.Command("wsl.exe", "~", "-d", client.Name(), "--", "sh", "-c", cmdCombined)
+	wslArgs := makeWslCommandArgs(client.Name(), cmdOpts.Cwd, "sh", "-c", cmdCombined)
+	ecmd := exec.Command("wsl.exe", wslArgs...)
 	if termSize.Rows == 0 || termSize.Cols == 0 {
 		termSize.Rows = shellutil.DefaultTermRows
 		termSize.Cols = shellutil.DefaultTermCols

@@ -331,6 +331,13 @@ type ConnUnion struct {
 	HomeDir    string
 }
 
+func resolveCommandCwd(cwd string, connType string) (string, error) {
+	if cwd == "" || connType != ConnType_Local {
+		return cwd, nil
+	}
+	return wavebase.ExpandHomeDir(cwd)
+}
+
 func (bc *ShellController) getConnUnion(logCtx context.Context, remoteName string, blockMeta waveobj.MetaMapType) (ConnUnion, error) {
 	rtn := ConnUnion{ConnName: remoteName}
 	wshEnabled := !blockMeta.GetBool(waveobj.MetaKey_CmdNoWsh, false)
@@ -403,13 +410,6 @@ func (bc *ShellController) setupAndStartShellProcess(logCtx context.Context, rc 
 		cmdOpts.Interactive = true
 		cmdOpts.Login = true
 		cmdOpts.Cwd = blockMeta.GetString(waveobj.MetaKey_CmdCwd, "")
-		if cmdOpts.Cwd != "" {
-			cwdPath, err := wavebase.ExpandHomeDir(cmdOpts.Cwd)
-			if err != nil {
-				return nil, err
-			}
-			cmdOpts.Cwd = cwdPath
-		}
 	} else if bc.ControllerType == BlockController_Cmd {
 		var cmdOptsPtr *shellexec.CommandOptsType
 		cmdStr, cmdOptsPtr, err = createCmdStrAndOpts(bc.BlockId, blockMeta, remoteName)
@@ -419,6 +419,10 @@ func (bc *ShellController) setupAndStartShellProcess(logCtx context.Context, rc 
 		cmdOpts = *cmdOptsPtr
 	} else {
 		return nil, fmt.Errorf("unknown controller type %q", bc.ControllerType)
+	}
+	cmdOpts.Cwd, err = resolveCommandCwd(cmdOpts.Cwd, connUnion.ConnType)
+	if err != nil {
+		return nil, err
 	}
 	var shellProc *shellexec.ShellProc
 	swapToken := makeSwapToken(ctx, logCtx, bc.BlockId, blockMeta, remoteName, connUnion.ShellType)
@@ -723,13 +727,6 @@ func createCmdStrAndOpts(blockId string, blockMeta waveobj.MetaMapType, connName
 		return "", nil, fmt.Errorf("missing cmd in block meta")
 	}
 	cmdOpts.Cwd = blockMeta.GetString(waveobj.MetaKey_CmdCwd, "")
-	if cmdOpts.Cwd != "" {
-		cwdPath, err := wavebase.ExpandHomeDir(cmdOpts.Cwd)
-		if err != nil {
-			return "", nil, err
-		}
-		cmdOpts.Cwd = cwdPath
-	}
 	useShell := blockMeta.GetBool(waveobj.MetaKey_CmdShell, true)
 	if !useShell {
 		if strings.Contains(cmdStr, " ") {
