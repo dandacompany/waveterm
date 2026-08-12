@@ -36,6 +36,7 @@ jobs:
             SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
             ARTIFACTS_KEY_ID: ${{ secrets.ARTIFACTS_KEY_ID }}
             ARTIFACTS_KEY_SECRET: ${{ secrets.ARTIFACTS_KEY_SECRET }}
+            MACOS_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE_2 }}
         steps:
             - uses: actions/checkout@v6
             - name: Install Linux Build Dependencies (Linux only)
@@ -137,10 +138,10 @@ jobs:
               env:
                   USE_SYSTEM_FPM: true # Ensure that the installed version of FPM is used rather than the bundled one.
                   SNAPCRAFT_BUILD_ENVIRONMENT: host
-            # Retry Darwin build in case of notarization failures
+            # Retry signed Darwin builds in case of notarization failures.
             - uses: nick-fields/retry@v4
-              name: Build (Darwin)
-              if: matrix.platform == 'darwin'
+              name: Build (Darwin, signed)
+              if: matrix.platform == 'darwin' && env.MACOS_CERTIFICATE != ''
               with:
                   command: task package
                   timeout_minutes: 120
@@ -148,12 +149,23 @@ jobs:
                   max_attempts: 3
               env:
                   USE_SYSTEM_FPM: true # Ensure that the installed version of FPM is used rather than the bundled one.
-                  CSC_LINK: ${{ matrix.platform == 'darwin' && secrets.PROD_MACOS_CERTIFICATE_2}}
-                  CSC_KEY_PASSWORD: ${{ matrix.platform == 'darwin' && secrets.PROD_MACOS_CERTIFICATE_PWD_2 }}
-                  APPLE_ID: ${{ matrix.platform == 'darwin' && secrets.PROD_MACOS_NOTARIZATION_APPLE_ID_2 }}
-                  APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.platform == 'darwin' && secrets.PROD_MACOS_NOTARIZATION_PWD_2 }}
-                  APPLE_TEAM_ID: ${{ matrix.platform == 'darwin' && secrets.PROD_MACOS_NOTARIZATION_TEAM_ID_2 }}
+                  CSC_LINK: ${{ env.MACOS_CERTIFICATE }}
+                  CSC_KEY_PASSWORD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD_2 }}
+                  APPLE_ID: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID_2 }}
+                  APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD_2 }}
+                  APPLE_TEAM_ID: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID_2 }}
                   STATIC_DOCSITE_PATH: ${{env.STATIC_DOCSITE_PATH}}
+            - uses: nick-fields/retry@v4
+              name: Build (Darwin, unsigned)
+              if: matrix.platform == 'darwin' && env.MACOS_CERTIFICATE == ''
+              with:
+                  command: task package
+                  timeout_minutes: 120
+                  retry_on: error
+                  max_attempts: 3
+              env:
+                  USE_SYSTEM_FPM: true # Ensure that the installed version of FPM is used rather than the bundled one.
+                  CSC_IDENTITY_AUTO_DISCOVERY: false
             - name: Build (Windows)
               if: matrix.platform == 'windows'
               run: task package
@@ -213,3 +225,5 @@ jobs:
                       make/*.snap
                       make/*.flatpak
                       make/*.AppImage
+                      make/*.blockmap
+                      make/latest*.yml
