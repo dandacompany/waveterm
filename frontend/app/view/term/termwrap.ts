@@ -36,6 +36,7 @@ import {
     isClaudeCodeCommand,
     type ShellIntegrationStatus,
 } from "./osc-handlers";
+import { configureTerminalLinkHandlers } from "./term-links";
 import {
     bufferLinesToText,
     createTempFileFromBlob,
@@ -150,6 +151,15 @@ export class TermWrap {
         this.lastCommandAtom = jotai.atom(null) as jotai.PrimitiveAtom<string | null>;
         this.claudeCodeActiveAtom = jotai.atom(false);
         this.webglEnabledAtom = jotai.atom(false) as jotai.PrimitiveAtom<boolean>;
+        const linkHandlers = configureTerminalLinkHandlers(
+            options,
+            PLATFORM === PlatformMacOS,
+            (uri) => fireAndForget(() => openLink(uri)),
+            (uri, mouseX, mouseY) => {
+                this.hoveredLinkUri = uri;
+                this.onLinkHover?.(uri, mouseX, mouseY);
+            }
+        );
         this.terminal = new Terminal(options);
         this.fitAddon = new FitAddon();
         this.serializeAddon = new SerializeAddon();
@@ -158,33 +168,10 @@ export class TermWrap {
         this.terminal.loadAddon(this.fitAddon);
         this.terminal.loadAddon(this.serializeAddon);
         this.terminal.loadAddon(
-            new WebLinksAddon(
-                (e, uri) => {
-                    e.preventDefault();
-                    switch (PLATFORM) {
-                        case PlatformMacOS:
-                            if (e.metaKey) {
-                                fireAndForget(() => openLink(uri));
-                            }
-                            break;
-                        default:
-                            if (e.ctrlKey) {
-                                fireAndForget(() => openLink(uri));
-                            }
-                            break;
-                    }
-                },
-                {
-                    hover: (e, uri) => {
-                        this.hoveredLinkUri = uri;
-                        this.onLinkHover?.(uri, e.clientX, e.clientY);
-                    },
-                    leave: () => {
-                        this.hoveredLinkUri = null;
-                        this.onLinkHover?.(null, 0, 0);
-                    },
-                }
-            )
+            new WebLinksAddon(linkHandlers.activate, {
+                hover: linkHandlers.hover,
+                leave: linkHandlers.leave,
+            })
         );
         this.setTermRenderer(WebGLSupported && waveOptions.useWebGl ? "webgl" : "dom");
         // Register OSC handlers

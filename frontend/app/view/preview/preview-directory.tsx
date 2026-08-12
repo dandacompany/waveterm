@@ -61,10 +61,12 @@ import {
     overwriteError,
 } from "./preview-directory-utils";
 import { type PreviewModel } from "./preview-model";
+import { createLatestRequestGuard } from "./preview-navigation";
 import type { PreviewEnv } from "./previewenv";
 import { useFolderDrop } from "./use-folder-drop";
 
 const PageJumpSize = 20;
+const EmptyDirectoryData: FileInfo[] = [];
 
 interface DirectoryTableHeaderCellProps {
     header: Header<FileInfo, unknown>;
@@ -681,6 +683,8 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
     const [focusIndex, setFocusIndex] = useState(0);
     const [selection, setSelection] = useState<SelectionState>(emptySelection);
     const [unfilteredData, setUnfilteredData] = useState<FileInfo[]>([]);
+    const [loadedDirLocation, setLoadedDirLocation] = useState<{ conn: string; path: string }>(null);
+    const listRequestGuardRef = useRef(createLatestRequestGuard());
     const showHiddenFiles = useAtomValue(model.showHiddenFiles);
     const [selectedPath, setSelectedPath] = useState("");
     const [refreshVersion, setRefreshVersion] = useAtom(model.refreshVersion);
@@ -727,42 +731,59 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
         };
     }, [setRefreshVersion]);
 
-    useEffect(
-        () =>
-            fireAndForget(async () => {
-                const entries: FileInfo[] = [];
-                try {
-                    const remotePath = await model.formatRemoteUri(dirPath, globalStore.get);
-                    const stream = env.rpc.FileListStreamCommand(TabRpcClient, { path: remotePath }, null);
-                    for await (const chunk of stream) {
-                        if (chunk?.fileinfo) {
-                            entries.push(...chunk.fileinfo);
-                        }
+    useEffect(() => {
+        const requestGuard = listRequestGuardRef.current;
+        const requestId = requestGuard.begin();
+        fireAndForget(async () => {
+            if (dirPath == null) {
+                if (requestGuard.isCurrent(requestId)) {
+                    setUnfilteredData([]);
+                    setLoadedDirLocation(null);
+                }
+                return;
+            }
+            const entries: FileInfo[] = [];
+            try {
+                const remotePath = await model.formatRemoteUri(dirPath, globalStore.get);
+                const stream = env.rpc.FileListStreamCommand(TabRpcClient, { path: remotePath }, null);
+                for await (const chunk of stream) {
+                    if (chunk?.fileinfo) {
+                        entries.push(...chunk.fileinfo);
                     }
-                    if (finfo?.dir && finfo?.path !== finfo?.dir) {
-                        entries.unshift({
-                            name: "..",
-                            path: finfo.dir,
-                            isdir: true,
-                            modtime: new Date().getTime(),
-                            mimetype: "directory",
-                        });
-                    }
-                } catch (e) {
-                    console.error("Directory Read Error", e);
-                    setErrorMsg({
-                        status: "Cannot Read Directory",
-                        text: `${e}`,
+                }
+                if (finfo?.dir && finfo?.path !== finfo?.dir) {
+                    entries.unshift({
+                        name: "..",
+                        path: finfo.dir,
+                        isdir: true,
+                        modtime: new Date().getTime(),
+                        mimetype: "directory",
                     });
                 }
+            } catch (e) {
+                if (!requestGuard.isCurrent(requestId)) {
+                    return;
+                }
+                console.error("Directory Read Error", e);
+                setErrorMsg({
+                    status: "Cannot Read Directory",
+                    text: `${e}`,
+                });
+            }
+            if (requestGuard.isCurrent(requestId)) {
                 setUnfilteredData(entries);
-            }),
-        [conn, dirPath, refreshVersion]
-    );
+                setLoadedDirLocation({ conn, path: dirPath });
+            }
+        });
+        return () => requestGuard.invalidate(requestId);
+    }, [conn, dirPath, finfo?.dir, refreshVersion]);
+
+    const visibleData =
+        loadedDirLocation?.conn === conn && loadedDirLocation?.path === dirPath ? unfilteredData : EmptyDirectoryData;
 
     const filteredData = useMemo(
         () =>
-            unfilteredData?.filter((fileInfo) => {
+            visibleData.filter((fileInfo) => {
                 if (fileInfo.name == null) {
                     console.log("fileInfo.name is null", fileInfo);
                     return false;
@@ -772,7 +793,7 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                 }
                 return fileInfo.name.toLowerCase().includes(searchText);
             }) ?? [],
-        [unfilteredData, showHiddenFiles, searchText]
+        [visibleData, showHiddenFiles, searchText]
     );
 
     useEffect(() => {
@@ -866,6 +887,16 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
         atom<EntryManagerOverlayProps>(null) as PrimitiveAtom<EntryManagerOverlayProps>
     )[0];
     const [entryManagerProps, setEntryManagerProps] = useAtom(entryManagerPropsAtom);
+
+    useEffect(() => {
+        setSearchText("");
+        setFocusIndex(0);
+        setSelection(emptySelection());
+        setSelectedPath("");
+        setEntryManagerProps(undefined);
+        setDropHint(null);
+        globalStore.set(model.directorySearchActive, false);
+    }, [conn, dirPath, model.directorySearchActive, setEntryManagerProps]);
 
     const { refs, floatingStyles, context } = useFloating({
         open: !!entryManagerProps,

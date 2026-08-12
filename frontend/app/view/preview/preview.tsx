@@ -16,6 +16,7 @@ import { CodeEditPreview } from "./preview-edit";
 import { ErrorOverlay } from "./preview-error-overlay";
 import { MarkdownPreview } from "./preview-markdown";
 import type { PreviewModel } from "./preview-model";
+import { getSpecializedViewKey } from "./preview-navigation";
 import { StreamingPreview } from "./preview-streaming";
 import type { PreviewEnv } from "./previewenv";
 
@@ -62,7 +63,13 @@ const SpecializedView = memo(({ parentRef, model }: SpecializedViewProps) => {
     if (!SpecializedViewComponent) {
         return <CenteredDiv>Invalid Specialized View Component ({specializedView.specializedView})</CenteredDiv>;
     }
-    return <SpecializedViewComponent key={path} model={model} parentRef={parentRef} />;
+    return (
+        <SpecializedViewComponent
+            key={getSpecializedViewKey(specializedView.specializedView, path)}
+            model={model}
+            parentRef={parentRef}
+        />
+    );
 });
 
 const fetchSuggestions = async (
