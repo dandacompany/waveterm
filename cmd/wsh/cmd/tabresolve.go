@@ -61,19 +61,11 @@ func listTabEntries() ([]tabEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	workspaces, err := wshclient.WorkspaceListCommand(RpcClient, &wshrpc.RpcOpts{Timeout: tabRpcTimeout})
+	// not WorkspaceListCommand: it drops workspaces with no name/icon/color, which is
+	// the default state, so the caller's own workspace is usually missing from it
+	ws, err := wshclient.GetWorkspaceCommand(RpcClient, wsId, &wshrpc.RpcOpts{Timeout: tabRpcTimeout})
 	if err != nil {
-		return nil, fmt.Errorf("listing workspaces: %w", err)
-	}
-	var ws *waveobj.Workspace
-	for _, wsInfo := range workspaces {
-		if wsInfo.WorkspaceData != nil && wsInfo.WorkspaceData.OID == wsId {
-			ws = wsInfo.WorkspaceData
-			break
-		}
-	}
-	if ws == nil {
-		return nil, fmt.Errorf("workspace %s not found", wsId)
+		return nil, fmt.Errorf("getting workspace %s: %w", wsId, err)
 	}
 	entries := make([]tabEntry, 0, len(ws.TabIds))
 	for idx, tabId := range ws.TabIds {

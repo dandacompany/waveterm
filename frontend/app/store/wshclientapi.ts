@@ -534,6 +534,12 @@ export class RpcApiType {
         return client.wshRpcCall("getwaveairatelimit", null, opts);
     }
 
+    // command "getworkspace" [call]
+    GetWorkspaceCommand(client: WshClient, data: string, opts?: RpcOpts): Promise<Workspace> {
+        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "getworkspace", data, opts);
+        return client.wshRpcCall("getworkspace", data, opts);
+    }
+
     // command "jobcmdexited" [call]
     JobCmdExitedCommand(client: WshClient, data: CommandJobCmdExitedData, opts?: RpcOpts): Promise<void> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "jobcmdexited", data, opts);

@@ -532,6 +532,12 @@ func GetWaveAIRateLimitCommand(w *wshutil.WshRpc, opts *wshrpc.RpcOpts) (*uctype
 	return resp, err
 }
 
+// command "getworkspace", wshserver.GetWorkspaceCommand
+func GetWorkspaceCommand(w *wshutil.WshRpc, data string, opts *wshrpc.RpcOpts) (*waveobj.Workspace, error) {
+	resp, err := sendRpcRequestCallHelper[*waveobj.Workspace](w, "getworkspace", data, opts)
+	return resp, err
+}
+
 // command "jobcmdexited", wshserver.JobCmdExitedCommand
 func JobCmdExitedCommand(w *wshutil.WshRpc, data wshrpc.CommandJobCmdExitedData, opts *wshrpc.RpcOpts) error {
 	_, err := sendRpcRequestCallHelper[any](w, "jobcmdexited", data, opts)

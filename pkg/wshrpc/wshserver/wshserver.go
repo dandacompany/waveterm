@@ -1046,6 +1046,14 @@ func (ws *WshServer) WorkspaceListCommand(ctx context.Context) ([]wshrpc.Workspa
 	return rtn, nil
 }
 
+func (ws *WshServer) GetWorkspaceCommand(ctx context.Context, workspaceId string) (*waveobj.Workspace, error) {
+	workspace, err := wcore.GetWorkspace(ctx, workspaceId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting workspace %s: %w", workspaceId, err)
+	}
+	return workspace, nil
+}
+
 func (ws *WshServer) ListAllAppsCommand(ctx context.Context) ([]wshrpc.AppInfo, error) {
 	return waveappstore.ListAllApps()
 }

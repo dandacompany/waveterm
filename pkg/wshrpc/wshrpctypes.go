@@ -151,6 +151,8 @@ type WshRpcInterface interface {
 	GetSecretsLinuxStorageBackendCommand(ctx context.Context) (string, error)
 
 	WorkspaceListCommand(ctx context.Context) ([]WorkspaceInfoData, error)
+	// unlike WorkspaceListCommand, this returns unnamed workspaces too
+	GetWorkspaceCommand(ctx context.Context, workspaceId string) (*waveobj.Workspace, error)
 	GetUpdateChannelCommand(ctx context.Context) (string, error)
 
 	// terminal
