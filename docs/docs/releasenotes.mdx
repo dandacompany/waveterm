@@ -6,6 +6,16 @@ sidebar_position: 200
 
 # Release Notes
 
+### v0.17.4 &mdash; Aug 16, 2026
+
+This release makes tabs and block layout scriptable from `wsh`, and adds a way to type into a terminal block from the command line. Everything here works across tabs, so a script can set up a whole workspace without touching the mouse.
+
+- **`wsh tab`** - Manage tabs from the command line: `list`, `create`, `rename`, `move`, and `delete`. Tabs can be named four ways — omitted or `this` for the current tab, a 1-based number matching the tab bar, an exact tab name, or a full tab id. Deleting the last tab in a workspace is refused unless you pass `--close-window`
+- **Block Placement** - `wsh createblock` is no longer hidden and can place a block relative to an existing one: `--target` picks the reference block, `--position` takes `right`, `left`, `up`, `down`, or `replace`, and `--size` gives the new block a percentage of the resulting pair. A `term` block now comes up running a shell, so the other commands can talk to it
+- **`wsh sendkeys`** - Send keystrokes to a terminal block as if they were typed. Text is sent literally, so passwords and Windows paths arrive unchanged; named control keys go through `--keys` (`C-c`, `Up`, `Enter`, `F5`, and the rest), and `--signal` sends a signal instead
+- **Cross-Tab Addressing** - `wsh sendkeys`, `wsh createblock --target`, and `wsh termscrollback` all take `--tab`, so a script can reach a block in a tab it is not running in. Because `this` only ever means the current block, `--tab` requires an explicit `-b` rather than silently acting on the caller's own block
+- See the [wsh reference](/wsh-reference) for full flag documentation
+
 ### v0.14.5 &mdash; Apr 16, 2026
 
 Wave v0.14.5 introduces a new Process Viewer widget, Quake Mode for global hotkey, and several quality-of-life improvements.
