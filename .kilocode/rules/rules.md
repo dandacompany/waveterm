@@ -202,3 +202,27 @@ Also when adding content to the end of files prefer to use the new append_file t
 
 No need to run a `go build` or a `go run` to just check if the Go code compiles. VSCode's errors/problems cover this well.
 If there are no Go errors in VSCode you can assume the code compiles fine.
+
+### Typechecking TypeScript
+
+Run `task check:ts` (`npx tsc --noEmit`) after **every** task that touches TypeScript, before
+calling that task done. Do not rely on the tests: vitest only loads the modules a test file imports,
+so a missing import in a file no test imports is invisible to it, and vite's dev server does not
+typecheck at all. Do not rely on VSCode either — a subagent has no editor diagnostics.
+
+This is not hypothetical. `computeSplitNodeSize` was once called in `layoutModel.ts` without being
+imported; every Go check, the whole vitest suite, twelve code reviews and a dev build all passed,
+and the feature silently did nothing at runtime because the ReferenceError was swallowed by a
+`fireAndForget`. `tsc --noEmit` flags it in about a second.
+
+There are pre-existing errors in `frontend/preview/previews/processviewer.preview.tsx` and
+`frontend/util/keyutil.ts`. Judge your own work by whether it adds errors in the files you touched,
+not by a clean overall exit.
+
+### Verifying user-facing behavior
+
+Type checks and unit tests do not tell you a CLI command or a UI action actually works. For anything
+a user invokes, run the built app and exercise it. Several defects in `wsh` shipped past full test
+and review coverage and only appeared on the first real invocation — a command creating a terminal
+with no shell behind it, a lookup that failed because the frontend had not rendered a tab yet, a
+database write the UI never learned about.
