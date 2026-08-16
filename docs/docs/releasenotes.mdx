@@ -6,6 +6,10 @@ sidebar_position: 200
 
 # Release Notes
 
+### v0.17.5 &mdash; Aug 17, 2026
+
+- **[bugfix] `wsh blocks list`** - The command failed outright with "no workspaces found" on a normal install. It enumerated workspaces through a listing that hides any workspace without a name, icon, and color — the default state — so the list came back empty even though the caller was sitting in one. It now falls back to the caller's own workspace ([6228fa31](https://github.com/dandacompany/waveterm/commit/6228fa31))
+
 ### v0.17.4 &mdash; Aug 16, 2026
 
 This release makes tabs and block layout scriptable from `wsh`, and adds a way to type into a terminal block from the command line. Everything here works across tabs, so a script can set up a whole workspace without touching the mouse.
