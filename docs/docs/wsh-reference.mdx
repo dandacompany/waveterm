@@ -393,6 +393,41 @@ You can use either `--` followed by your command and arguments, or the `-c` flag
 
 ---
 
+## createblock
+
+<VersionBadge version="v0.17.4" />
+
+```sh
+wsh createblock <view> [key=value ...] [flags]
+```
+
+Create a new block in a tab. The view name is the widget type (`term`, `preview`, `web`, `edit`, `sysinfo`, `waveai`), and any `key=value` pairs are set as block metadata.
+
+Without `--target`, the block is inserted using the tab's default placement. With `--target`, the block is placed relative to an existing block.
+
+Flags:
+
+- `--tab <tab>` - tab to create the block in (number, name, or id; defaults to the current tab)
+- `--target <block>` - existing block to place the new block against (block number or id)
+- `--position <pos>` - placement relative to `--target`: `right` (default), `left`, `up`, `down`, `replace`
+- `--size <percent>` - the new block's share of the split pair, 1-99 (requires `--target`, not valid with `replace`)
+- `-m`, `--magnified` - create the block magnified
+
+Examples:
+
+```sh
+# A terminal beside block 1, taking 30% of the pair
+wsh createblock term --target 1 --position right --size 30
+
+# A preview block below block 1, in the tab named "logs"
+wsh createblock preview file=/tmp/notes.md --tab logs --target 1 --position down
+
+# Replace block 2 with a web block
+wsh createblock web url=https://waveterm.dev --target 2 --position replace
+```
+
+---
+
 ## deleteblock
 
 ```sh
@@ -926,6 +961,60 @@ The `--lastcommand` flag requires shell integration to be enabled. This feature 
 
 ---
 
+## sendkeys
+
+<VersionBadge version="v0.17.4" />
+
+```sh
+wsh sendkeys [-b block] [--tab tab] {text | --keys key... | --signal name}
+```
+
+Send keystrokes to a terminal block, as if they had been typed into it.
+
+The text argument is sent **literally** — no escape sequences are interpreted, so passwords and Windows paths arrive unchanged. Named control keys go through `--keys` instead.
+
+Flags:
+
+- `-b`, `--block <block>` - target block (block number or id; defaults to the current block)
+- `--tab <tab>` - tab containing the block (number, name, or id; defaults to the current tab)
+- `--keys <key>...` - named control keys to send
+- `--enter` - append a carriage return after the text argument
+- `--signal <name>` - send a signal (e.g. `SIGINT`) instead of input
+
+Key names:
+
+| Name                             | Sends                            |
+| -------------------------------- | -------------------------------- |
+| `C-a` .. `C-z`                   | control characters `0x01`-`0x1a` |
+| `Enter` (`Return`)               | carriage return                  |
+| `Tab`                            | tab                              |
+| `Escape` (`Esc`)                 | escape                           |
+| `Space`                          | space                            |
+| `BSpace`                         | backspace                        |
+| `Delete`                         | delete                           |
+| `Up` / `Down` / `Right` / `Left` | arrow keys                       |
+| `Home` / `End`                   | home / end                       |
+| `PageUp` / `PageDown`            | page up / page down              |
+| `F1` .. `F12`                    | function keys                    |
+
+Examples:
+
+```sh
+# Type a command and run it
+wsh sendkeys -b 2 --enter "npm test"
+
+# Re-run the previous command in block 2
+wsh sendkeys -b 2 --keys Up Enter
+
+# Interrupt whatever is running
+wsh sendkeys -b 2 --keys C-c
+
+# Reach a block in another tab
+wsh sendkeys --tab logs -b 1 --enter "tail -f app.log"
+```
+
+---
+
 ## wavepath
 
 The `wavepath` command lets you get the paths to various Wave Terminal directories and files, including configuration, data storage, and logs.
@@ -1011,6 +1100,70 @@ wsh blocks list --workspace=12d0c067-378e-454c-872e-77a314248114
 
 # Output as JSON for scripting
 wsh blocks list --json
+```
+
+---
+
+## tab
+
+<VersionBadge version="v0.17.4" />
+
+The `tab` command manages the tabs in the current workspace.
+
+Tabs can be addressed four ways:
+
+- omitted or `this` — the tab the command is running in
+- `2` — tab number, matching the tab bar order (1-based)
+- `logs` — tab name, matched exactly within the current workspace
+- `a0459921-cc1a-48cc-ae7b-5f4821e1c9e1` — full tab id
+
+Tab names are not unique. When a name matches more than one tab, the command fails and lists the matches rather than guessing.
+
+### list
+
+```sh
+wsh tab list [--json]
+```
+
+List the tabs in the current workspace with their numbers, names, and ids. The current tab is marked.
+
+### create
+
+```sh
+wsh tab create [name] [--empty] [--no-activate] [--json]
+```
+
+Create a new tab. Without a name, Wave assigns the next default name.
+
+Flags:
+
+- `--empty` - create the tab with no blocks (also skips the configured tab background)
+- `--no-activate` - create the tab without switching to it
+- `--json` - print the new tab id as json
+
+### rename
+
+```sh
+wsh tab rename <tab> <new-name>
+```
+
+Rename a tab. The tab bar updates immediately.
+
+### delete
+
+```sh
+wsh tab delete <tab> [--close-window]
+```
+
+Delete a tab and everything in it. Deleting the last tab in a workspace is refused, since it would leave an empty window; pass `--close-window` to delete it and close the window instead.
+
+Examples:
+
+```sh
+wsh tab create logs
+wsh tab rename 2 build
+wsh tab delete build
+wsh tab delete this --close-window
 ```
 
 ---

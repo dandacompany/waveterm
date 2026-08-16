@@ -96,6 +96,21 @@ wsh run -x -- npm test
 wsh getmeta
 ```
 
+Tabs, block placement, and terminal input can be scripted together:
+
+```sh
+# Make a dedicated tab and split it into two terminals
+wsh tab create logs
+wsh createblock term --tab logs
+wsh createblock term --tab logs --target 1 --position right --size 40
+
+# Start the dev server in the left terminal
+wsh sendkeys --tab logs -b 1 --enter "npm run dev"
+
+# Later, hand the last command's output to the AI sidebar
+wsh termscrollback --tab logs -b 1 --lastcommand | wsh ai - -m "what caused this error?"
+```
+
 ## Common Workflows
 
 Here are some common ways to use `wsh`:
