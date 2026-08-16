@@ -280,6 +280,14 @@ func (ws *WshServer) ResolveIdsCommand(ctx context.Context, data wshrpc.CommandR
 }
 
 func (ws *WshServer) CreateBlockCommand(ctx context.Context, data wshrpc.CommandCreateBlockData) (*waveobj.ORef, error) {
+	if data.TargetSizePercent != 0 {
+		if data.TargetSizePercent < 1 || data.TargetSizePercent > 99 {
+			return nil, fmt.Errorf("targetsizepercent must be between 1 and 99, got %d", data.TargetSizePercent)
+		}
+		if data.TargetAction == "replace" {
+			return nil, fmt.Errorf("targetsizepercent is not valid with a replace action")
+		}
+	}
 	ctx = waveobj.ContextWithUpdates(ctx)
 	tabId := data.TabId
 	blockData, err := wcore.CreateBlock(ctx, tabId, data.BlockDef, data.RtOpts)
@@ -336,12 +344,6 @@ func (ws *WshServer) CreateBlockCommand(ctx context.Context, data wshrpc.Command
 			return nil, fmt.Errorf("invalid target action: %s", data.TargetAction)
 		}
 		if data.TargetSizePercent != 0 {
-			if data.TargetSizePercent < 1 || data.TargetSizePercent > 99 {
-				return nil, fmt.Errorf("targetsizepercent must be between 1 and 99, got %d", data.TargetSizePercent)
-			}
-			if data.TargetAction == "replace" {
-				return nil, fmt.Errorf("targetsizepercent is not valid with a replace action")
-			}
 			sizePercent := data.TargetSizePercent
 			layoutAction.SizePercent = &sizePercent
 		}

@@ -65,6 +65,14 @@ func createBlockRun(cmd *cobra.Command, args []string) (rtnErr error) {
 	if createBlockSize != 0 && createBlockTarget == "" {
 		return fmt.Errorf("--size requires --target")
 	}
+	if createBlockSize != 0 {
+		if createBlockSize < 1 || createBlockSize > 99 {
+			return fmt.Errorf("targetsizepercent must be between 1 and 99, got %d", createBlockSize)
+		}
+		if createBlockPosition == "replace" {
+			return fmt.Errorf("targetsizepercent is not valid with a replace action")
+		}
+	}
 	targetAction, ok := positionToTargetAction[createBlockPosition]
 	if !ok {
 		valid := make([]string, 0, len(positionToTargetAction))
