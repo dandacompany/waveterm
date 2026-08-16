@@ -11,7 +11,7 @@ import { splitAtom } from "jotai/utils";
 import { createRef, CSSProperties } from "react";
 import { debounce } from "throttle-debounce";
 import { getLayoutStateAtomFromTab } from "./layoutAtom";
-import { balanceNode, findNode, newLayoutNode, walkNodes } from "./layoutNode";
+import { balanceNode, computeSplitNodeSize, findNode, findNodeByBlockId, newLayoutNode, walkNodes } from "./layoutNode";
 import {
     clearTree,
     computeMoveNode,
@@ -1498,12 +1498,10 @@ export class LayoutModel {
      * @returns The node containing the specified blockId, null if not found.
      */
     getNodeByBlockId(blockId: string): LayoutNode {
-        for (const leaf of this.getter(this.leafs)) {
-            if (leaf.data.blockId === blockId) {
-                return leaf;
-            }
-        }
-        return null;
+        // walks the tree rather than reading the `leafs` atom: that atom is only
+        // refreshed in updateTree(), which runs after a whole batch of backend
+        // actions, so a lookup mid-batch would miss a node an earlier action added
+        return findNodeByBlockId(this.treeState.rootNode, blockId);
     }
 
     /**

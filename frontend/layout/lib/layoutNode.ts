@@ -300,3 +300,28 @@ export function computeSplitNodeSize(targetSize: number, sizePercent: number, fa
     const pct = Math.min(99, Math.max(1, sizePercent));
     return Math.max(1, Math.round((targetSize * pct) / (100 - pct)));
 }
+
+/**
+ * Find the leaf node holding a given blockId by walking the tree itself.
+ * Callers must not look this up in the model's `leafs` atom: that atom is only
+ * refreshed inside updateTree(), so within a batch of backend layout actions it
+ * still describes the previous render and cannot see a node an earlier action in
+ * the same batch just inserted.
+ * @param node The root of the tree to search.
+ * @param blockId The blockId to look for.
+ */
+export function findNodeByBlockId(node: LayoutNode, blockId: string): LayoutNode {
+    if (node == null) {
+        return null;
+    }
+    if (node.data?.blockId === blockId) {
+        return node;
+    }
+    for (const child of node.children ?? []) {
+        const found = findNodeByBlockId(child, blockId);
+        if (found) {
+            return found;
+        }
+    }
+    return null;
+}
