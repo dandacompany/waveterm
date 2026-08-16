@@ -315,6 +315,14 @@ declare global {
         blockdef: BlockDef;
     };
 
+    // wshrpc.CommandCreateTabData
+    type CommandCreateTabData = {
+        workspaceid?: string;
+        name?: string;
+        empty?: boolean;
+        noactivate?: boolean;
+    };
+
     // wshrpc.CommandDebugTermData
     type CommandDebugTermData = {
         blockid: string;
@@ -342,6 +350,12 @@ declare global {
     type CommandDeleteFileData = {
         path: string;
         recursive: boolean;
+    };
+
+    // wshrpc.CommandDeleteTabData
+    type CommandDeleteTabData = {
+        tabid: string;
+        closewindow?: boolean;
     };
 
     // wshrpc.CommandDisposeData

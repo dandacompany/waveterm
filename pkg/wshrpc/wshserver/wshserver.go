@@ -53,6 +53,7 @@ import (
 	"github.com/wavetermdev/waveterm/pkg/wcore"
 	"github.com/wavetermdev/waveterm/pkg/wps"
 	"github.com/wavetermdev/waveterm/pkg/wshrpc"
+	"github.com/wavetermdev/waveterm/pkg/wshrpc/wshclient"
 	"github.com/wavetermdev/waveterm/pkg/wshutil"
 	"github.com/wavetermdev/waveterm/pkg/wsl"
 	"github.com/wavetermdev/waveterm/pkg/wslconn"
@@ -172,6 +173,56 @@ func (ws *WshServer) UpdateWorkspaceTabIdsCommand(ctx context.Context, workspace
 		return fmt.Errorf("error updating workspace tab ids: %w", err)
 	}
 	wcore.SendWaveObjUpdate(oref)
+	return nil
+}
+
+func (ws *WshServer) CreateTabCommand(ctx context.Context, data wshrpc.CommandCreateTabData) (string, error) {
+	ctx = waveobj.ContextWithUpdates(ctx)
+	workspaceId := data.WorkspaceId
+	if workspaceId == "" {
+		return "", fmt.Errorf("no workspaceid provided")
+	}
+	// Empty rides the isInitialLaunch parameter, which skips both the default
+	// layout and the configured tab background
+	tabId, err := wcore.CreateTab(ctx, workspaceId, data.Name, !data.NoActivate, data.Empty)
+	if err != nil {
+		return "", fmt.Errorf("error creating tab: %w", err)
+	}
+	updates := waveobj.ContextGetUpdatesRtn(ctx)
+	wps.Broker.SendUpdateEvents(updates)
+	return tabId, nil
+}
+
+func (ws *WshServer) DeleteTabCommand(ctx context.Context, data wshrpc.CommandDeleteTabData) error {
+	ctx = waveobj.ContextWithUpdates(ctx)
+	workspaceId, err := wstore.DBFindWorkspaceForTabId(ctx, data.TabId)
+	if err != nil {
+		return fmt.Errorf("error finding workspace for tab %s: %w", data.TabId, err)
+	}
+	workspace, err := wstore.DBMustGet[*waveobj.Workspace](ctx, workspaceId)
+	if err != nil {
+		return fmt.Errorf("error getting workspace: %w", err)
+	}
+	if len(workspace.TabIds) <= 1 && !data.CloseWindow {
+		return fmt.Errorf("cannot delete the last tab in a workspace, pass closewindow to close the window instead")
+	}
+	windowId, err := wstore.DBFindWindowForWorkspaceId(ctx, workspaceId)
+	if err != nil && data.CloseWindow {
+		return fmt.Errorf("error finding window for workspace: %w", err)
+	}
+	newActiveTabId, err := wcore.DeleteTab(ctx, workspaceId, data.TabId, false)
+	if err != nil {
+		return fmt.Errorf("error deleting tab: %w", err)
+	}
+	updates := waveobj.ContextGetUpdatesRtn(ctx)
+	wps.Broker.SendUpdateEvents(updates)
+	if newActiveTabId == "" && data.CloseWindow {
+		client := wshclient.GetBareRpcClient()
+		err = wshclient.CloseWindowCommand(client, windowId, &wshrpc.RpcOpts{Route: wshutil.ElectronRoute, Timeout: 2000})
+		if err != nil {
+			return fmt.Errorf("tab deleted, but closing the window failed: %w", err)
+		}
+	}
 	return nil
 }
 

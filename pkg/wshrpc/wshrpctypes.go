@@ -98,6 +98,8 @@ type WshRpcInterface interface {
 	GetTabCommand(ctx context.Context, tabId string) (*waveobj.Tab, error)
 	UpdateTabNameCommand(ctx context.Context, tabId string, newName string) error
 	UpdateWorkspaceTabIdsCommand(ctx context.Context, workspaceId string, tabIds []string) error
+	CreateTabCommand(ctx context.Context, data CommandCreateTabData) (string, error)
+	DeleteTabCommand(ctx context.Context, data CommandDeleteTabData) error
 	GetAllBadgesCommand(ctx context.Context) ([]baseds.BadgeEvent, error)
 
 	// connection functions
@@ -337,6 +339,18 @@ type CommandWaitForRouteData struct {
 
 type CommandDeleteBlockData struct {
 	BlockId string `json:"blockid"`
+}
+
+type CommandCreateTabData struct {
+	WorkspaceId string `json:"workspaceid,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Empty       bool   `json:"empty,omitempty"`
+	NoActivate  bool   `json:"noactivate,omitempty"`
+}
+
+type CommandDeleteTabData struct {
+	TabId       string `json:"tabid"`
+	CloseWindow bool   `json:"closewindow,omitempty"`
 }
 
 type CommandEventReadHistoryData struct {

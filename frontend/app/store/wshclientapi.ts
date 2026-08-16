@@ -198,6 +198,12 @@ export class RpcApiType {
         return client.wshRpcCall("createsubblock", data, opts);
     }
 
+    // command "createtab" [call]
+    CreateTabCommand(client: WshClient, data: CommandCreateTabData, opts?: RpcOpts): Promise<string> {
+        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "createtab", data, opts);
+        return client.wshRpcCall("createtab", data, opts);
+    }
+
     // command "debugterm" [call]
     DebugTermCommand(client: WshClient, data: CommandDebugTermData, opts?: RpcOpts): Promise<CommandDebugTermRtnData> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "debugterm", data, opts);
@@ -232,6 +238,12 @@ export class RpcApiType {
     DeleteSubBlockCommand(client: WshClient, data: CommandDeleteBlockData, opts?: RpcOpts): Promise<void> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "deletesubblock", data, opts);
         return client.wshRpcCall("deletesubblock", data, opts);
+    }
+
+    // command "deletetab" [call]
+    DeleteTabCommand(client: WshClient, data: CommandDeleteTabData, opts?: RpcOpts): Promise<void> {
+        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "deletetab", data, opts);
+        return client.wshRpcCall("deletetab", data, opts);
     }
 
     // command "dismisswshfail" [call]
