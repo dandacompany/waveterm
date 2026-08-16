@@ -283,3 +283,18 @@ function findNextInsertLocationHelper(
 export function totalChildrenSize(node: LayoutNode): number {
     return node.children?.reduce((partialSum, child) => partialSum + child.size, 0);
 }
+
+/**
+ * Convert a requested share of a split pair into the sibling-relative weight the
+ * layout tree actually stores. A node's size is a flex weight, not a percentage,
+ * so the target's current size has to be folded in.
+ * @param targetSize The current size of the node being split.
+ * @param sizePercent The requested share of the resulting pair, 1-99.
+ * @param fallback The raw size to use when no percentage was requested.
+ */
+export function computeSplitNodeSize(targetSize: number, sizePercent: number, fallback: number): number {
+    if (sizePercent == null) {
+        return fallback;
+    }
+    return Math.max(1, Math.round((targetSize * sizePercent) / (100 - sizePercent)));
+}

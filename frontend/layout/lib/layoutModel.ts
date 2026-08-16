@@ -523,9 +523,12 @@ export class LayoutModel {
                     );
                     break;
                 }
-                const newNode = newLayoutNode(undefined, action.nodesize, undefined, {
-                    blockId: action.blockid,
-                });
+                const newNode = newLayoutNode(
+                    undefined,
+                    computeSplitNodeSize(targetNode.size, action.sizepercent, action.nodesize),
+                    undefined,
+                    { blockId: action.blockid }
+                );
                 const splitAction: LayoutTreeSplitHorizontalAction = {
                     type: LayoutTreeActionType.SplitHorizontal,
                     targetNodeId: targetNode.id,
@@ -551,9 +554,12 @@ export class LayoutModel {
                     );
                     break;
                 }
-                const newNode = newLayoutNode(undefined, action.nodesize, undefined, {
-                    blockId: action.blockid,
-                });
+                const newNode = newLayoutNode(
+                    undefined,
+                    computeSplitNodeSize(targetNode.size, action.sizepercent, action.nodesize),
+                    undefined,
+                    { blockId: action.blockid }
+                );
                 const splitAction: LayoutTreeSplitVerticalAction = {
                     type: LayoutTreeActionType.SplitVertical,
                     targetNodeId: targetNode.id,

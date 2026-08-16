@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { assert, test } from "vitest";
-import { addChildAt, addIntermediateNode, balanceNode, findNextInsertLocation, newLayoutNode } from "../lib/layoutNode";
+import {
+    addChildAt,
+    addIntermediateNode,
+    balanceNode,
+    computeSplitNodeSize,
+    findNextInsertLocation,
+    newLayoutNode,
+} from "../lib/layoutNode";
 import { FlexDirection, LayoutNode } from "../lib/types";
 
 test("newLayoutNode", () => {
@@ -296,4 +303,21 @@ test("findNextInsertLocation", () => {
     const insertLoc3 = findNextInsertLocation(node3, 5);
     assert(insertLoc3.node.id === node3Inner4.id, "should insert into node3Inner4");
     assert(insertLoc3.index === 1, "should insert into index 1 of node3Inner4");
+});
+
+test("computeSplitNodeSize", () => {
+    assert.equal(
+        computeSplitNodeSize(10, 50, undefined),
+        10,
+        "50 percent next to a size-10 sibling should match the sibling"
+    );
+    assert.equal(computeSplitNodeSize(10, 30, undefined), 4, "30 percent of the pair is 30/70 of the sibling");
+    assert.equal(computeSplitNodeSize(20, 75, undefined), 60, "75 percent of the pair is 3x the sibling");
+    assert.equal(computeSplitNodeSize(10, 1, undefined), 1, "tiny percentages clamp to at least 1");
+    assert.equal(computeSplitNodeSize(10, undefined, 7), 7, "no percentage falls back to the raw size");
+    assert.equal(
+        computeSplitNodeSize(10, undefined, undefined),
+        undefined,
+        "no percentage and no fallback is undefined"
+    );
 });

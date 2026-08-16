@@ -1094,6 +1094,7 @@ declare global {
         actionid: string;
         blockid: string;
         nodesize?: number;
+        sizepercent?: number;
         indexarr?: number[];
         focused: boolean;
         magnified: boolean;

@@ -212,6 +212,7 @@ type LayoutActionData struct {
 	ActionId      string `json:"actionid"`
 	BlockId       string `json:"blockid"`
 	NodeSize      *uint  `json:"nodesize,omitempty"`
+	SizePercent   *int   `json:"sizepercent,omitempty"`
 	IndexArr      *[]int `json:"indexarr,omitempty"`
 	Focused       bool   `json:"focused"`
 	Magnified     bool   `json:"magnified"`
