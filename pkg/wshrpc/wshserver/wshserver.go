@@ -190,6 +190,12 @@ func (ws *WshServer) CreateTabCommand(ctx context.Context, data wshrpc.CommandCr
 	}
 	updates := waveobj.ContextGetUpdatesRtn(ctx)
 	wps.Broker.SendUpdateEvents(updates)
+	if !data.NoActivate {
+		// wcore.SetActiveTab only writes the db; electron swaps the tab's WebContentsView
+		// when it sees this event, and the GUI never needs it because its own tab actions
+		// go through the electron action queue instead
+		wcore.SendActiveTabUpdate(ctx, workspaceId, tabId)
+	}
 	return tabId, nil
 }
 
@@ -222,6 +228,10 @@ func (ws *WshServer) DeleteTabCommand(ctx context.Context, data wshrpc.CommandDe
 	}
 	updates := waveobj.ContextGetUpdatesRtn(ctx)
 	wps.Broker.SendUpdateEvents(updates)
+	if newActiveTabId != "" {
+		// without this electron keeps showing the tab that was just destroyed
+		wcore.SendActiveTabUpdate(ctx, workspaceId, newActiveTabId)
+	}
 	if newActiveTabId == "" && data.CloseWindow {
 		client := wshclient.GetBareRpcClient()
 		err = wshclient.CloseWindowCommand(client, windowId, &wshrpc.RpcOpts{Route: wshutil.ElectronRoute, Timeout: 2000})
