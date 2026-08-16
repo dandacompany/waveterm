@@ -16,6 +16,66 @@ This release makes tabs and block layout scriptable from `wsh`, and adds a way t
 - **Cross-Tab Addressing** - `wsh sendkeys`, `wsh createblock --target`, and `wsh termscrollback` all take `--tab`, so a script can reach a block in a tab it is not running in. Because `this` only ever means the current block, `--tab` requires an explicit `-b` rather than silently acting on the caller's own block
 - See the [wsh reference](/wsh-reference) for full flag documentation
 
+### v0.17.3 &mdash; Aug 13, 2026
+
+- **[bugfix] File Tree / OSC 8 Links** - Preserve the file tree and open OSC 8 hyperlinks ([83e0ac91](https://github.com/dandacompany/waveterm/commit/83e0ac91))
+
+### v0.17.2 &mdash; Aug 10, 2026
+
+- **[bugfix] WSL** - Open WSL terminals in the selected directory ([2d263381](https://github.com/dandacompany/waveterm/commit/2d263381))
+
+### v0.17.1 &mdash; Jul 28, 2026
+
+- **[bugfix] Korean IME on Windows** - Fix terminator inversion during Korean composition ([3aabe93a](https://github.com/dandacompany/waveterm/commit/3aabe93a))
+
+### v0.17.0 &mdash; Jul 27, 2026
+
+- **File Explorer** - Multi-select, folder drop targets, and live listing ([d459bdd8](https://github.com/dandacompany/waveterm/commit/d459bdd8))
+- **[bugfix] Korean IME** - Fix Korean input in the terminal ([5914ee58](https://github.com/dandacompany/waveterm/commit/5914ee58))
+- **[bugfix] Streaming** - Recover from dropped stream packets instead of hanging forever ([4c7f319c](https://github.com/dandacompany/waveterm/commit/4c7f319c))
+
+### v0.16.0 &mdash; Jul 25, 2026
+
+- **Directory Tree Panel** - Two-panel tree + list layout in the directory block, with a folder-tree toggle in the block header, lazy loading, and reveal ([c51451eb](https://github.com/dandacompany/waveterm/commit/c51451eb), [31e5df85](https://github.com/dandacompany/waveterm/commit/31e5df85), [533d31d5](https://github.com/dandacompany/waveterm/commit/533d31d5), [36a1cc02](https://github.com/dandacompany/waveterm/commit/36a1cc02), [4a08ee1b](https://github.com/dandacompany/waveterm/commit/4a08ee1b))
+- **Live Preview Reload** - The preview viewer reloads when the file changes on disk ([f8378242](https://github.com/dandacompany/waveterm/commit/f8378242))
+- **[bugfix] Hidden Files** - The hidden-files toggle is now reflected in the tree, and nodes show load/error state ([993390b9](https://github.com/dandacompany/waveterm/commit/993390b9))
+- **[bugfix] Bookmarks** - Default file bookmarks are deletable and trimmed to three ([380f182a](https://github.com/dandacompany/waveterm/commit/380f182a))
+- **[bugfix] Windows** - Handle the Windows drive-root anchor in tree reveal ([ef468695](https://github.com/dandacompany/waveterm/commit/ef468695))
+- Root-aware path comparison in `isPathAtOrUnder` ([af98afce](https://github.com/dandacompany/waveterm/commit/af98afce))
+
+### v0.15.1 &mdash; Jul 24, 2026
+
+- **Drag Files In from the OS** - Copy files dropped from Finder or Explorer into a directory block ([6a4bb1af](https://github.com/dandacompany/waveterm/commit/6a4bb1af))
+- **File Copy Progress** - Removed the copy size cap and added copy-progress reporting ([93a49a73](https://github.com/dandacompany/waveterm/commit/93a49a73))
+- **[bugfix]** Thread `CopyId` through wshfs Copy/Move so copy-progress events reach the frontend ([dc3d79ff](https://github.com/dandacompany/waveterm/commit/dc3d79ff))
+
+### v0.15.0 &mdash; Jul 24, 2026
+
+- **Open Files from the OS** - Wave registers file associations and the `wave://` protocol, so double-clicked files and `wave://` URLs open in Wave. External files open as a new block in the active tab rather than a new tab. New `window:nativeopenhandler` config key ([58538fd1](https://github.com/dandacompany/waveterm/commit/58538fd1), [2c450cfc](https://github.com/dandacompany/waveterm/commit/2c450cfc), [c77c9255](https://github.com/dandacompany/waveterm/commit/c77c9255), [e12fd566](https://github.com/dandacompany/waveterm/commit/e12fd566), [df502388](https://github.com/dandacompany/waveterm/commit/df502388), [108b4a9f](https://github.com/dandacompany/waveterm/commit/108b4a9f), [9bb2926c](https://github.com/dandacompany/waveterm/commit/9bb2926c))
+- **Drag Blocks Between Tabs and Windows** - File drag copy/move across tabs, windows, and connections, with a hint showing what will happen, backed by a native uri-list drag bridge ([c71123d9](https://github.com/dandacompany/waveterm/commit/c71123d9), [c548b735](https://github.com/dandacompany/waveterm/commit/c548b735), [8a724413](https://github.com/dandacompany/waveterm/commit/8a724413), [703923e0](https://github.com/dandacompany/waveterm/commit/703923e0))
+- **Drop OS Files onto a Preview Block** - Dropped files open through the external opener ([0472ba36](https://github.com/dandacompany/waveterm/commit/0472ba36))
+- **[bugfix]** Close a cross-window dragend race by reading the drag broker before awaiting in drop ([8ce559ab](https://github.com/dandacompany/waveterm/commit/8ce559ab))
+- **[bugfix] Packaging** - Flatten `fileAssociations` to one extension per entry for Linux/Windows packaging ([b807cb90](https://github.com/dandacompany/waveterm/commit/b807cb90))
+
+### v0.14.9 &mdash; Jul 23, 2026
+
+- **File Bookmarks** - Bookmark files and jump back to them: a star dropdown in the preview header, "Add to Bookmarks" in the directory context menu, and an edit modal for rename/reorder/delete. Bookmarks remember your position in the document, including across files in markdown ([55b65ee3](https://github.com/dandacompany/waveterm/commit/55b65ee3), [6235b3f1](https://github.com/dandacompany/waveterm/commit/6235b3f1), [1cfc6e81](https://github.com/dandacompany/waveterm/commit/1cfc6e81), [889f4181](https://github.com/dandacompany/waveterm/commit/889f4181), [b97ac2d7](https://github.com/dandacompany/waveterm/commit/b97ac2d7), [b0d73928](https://github.com/dandacompany/waveterm/commit/b0d73928), [6cde12dc](https://github.com/dandacompany/waveterm/commit/6cde12dc), [b18943af](https://github.com/dandacompany/waveterm/commit/b18943af), [1108b523](https://github.com/dandacompany/waveterm/commit/1108b523))
+- **Markdown Scroll Position** - Markdown preview keeps its scroll position across refresh ([e625570f](https://github.com/dandacompany/waveterm/commit/e625570f))
+
+### v0.14.8 &mdash; Jul 2, 2026
+
+- **[bugfix] Config** - Skip AppleDouble (`._*`) config files ([232de39f](https://github.com/dandacompany/waveterm/commit/232de39f))
+
+### v0.14.7 &mdash; Jun 18, 2026
+
+- **Tab Close Confirmation** - Confirm before closing a tab ([ceba5282](https://github.com/dandacompany/waveterm/commit/ceba5282))
+
+### v0.14.6 &mdash; Jun 2, 2026
+
+- **[bugfix] Korean IME in the Terminal** - A series of fixes to IME composition handling: composition order around spaces, suffix punctuation, control-regex avoidance in suffix checks, composition release, and typed composition keyboard events ([447cba7a](https://github.com/dandacompany/waveterm/commit/447cba7a), [ada924de](https://github.com/dandacompany/waveterm/commit/ada924de), [90749e99](https://github.com/dandacompany/waveterm/commit/90749e99), [42d0b9a7](https://github.com/dandacompany/waveterm/commit/42d0b9a7), [02760364](https://github.com/dandacompany/waveterm/commit/02760364), [8f2af92d](https://github.com/dandacompany/waveterm/commit/8f2af92d))
+- **Terminal Rendering** - Default to non-WebGL rendering ([d1119b4c](https://github.com/dandacompany/waveterm/commit/d1119b4c))
+- **[bugfix] macOS** - Fix the wavesrv deployment target ([95516dc2](https://github.com/dandacompany/waveterm/commit/95516dc2))
+
 ### v0.14.5 &mdash; Apr 16, 2026
 
 Wave v0.14.5 introduces a new Process Viewer widget, Quake Mode for global hotkey, and several quality-of-life improvements.
