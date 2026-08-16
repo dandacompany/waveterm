@@ -7,3 +7,4 @@ frontend/node_modules
 frontend/app/store/services.ts
 frontend/app/store/wshclientapi.ts
 frontend/types/gotypes.d.ts
+frontend/types/waveevent.d.ts
