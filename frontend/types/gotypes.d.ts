@@ -307,6 +307,7 @@ declare global {
         focused?: boolean;
         targetblockid?: string;
         targetaction?: string;
+        targetsizepercent?: number;
     };
 
     // wshrpc.CommandCreateSubBlockData

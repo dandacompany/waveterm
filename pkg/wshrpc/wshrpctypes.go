@@ -289,14 +289,15 @@ type CommandResolveIdsRtnData struct {
 }
 
 type CommandCreateBlockData struct {
-	TabId         string               `json:"tabid"`
-	BlockDef      *waveobj.BlockDef    `json:"blockdef"`
-	RtOpts        *waveobj.RuntimeOpts `json:"rtopts,omitempty"`
-	Magnified     bool                 `json:"magnified,omitempty"`
-	Ephemeral     bool                 `json:"ephemeral,omitempty"`
-	Focused       bool                 `json:"focused,omitempty"`
-	TargetBlockId string               `json:"targetblockid,omitempty"`
-	TargetAction  string               `json:"targetaction,omitempty"` // "replace", "splitright", "splitdown", "splitleft", "splitup"
+	TabId             string               `json:"tabid"`
+	BlockDef          *waveobj.BlockDef    `json:"blockdef"`
+	RtOpts            *waveobj.RuntimeOpts `json:"rtopts,omitempty"`
+	Magnified         bool                 `json:"magnified,omitempty"`
+	Ephemeral         bool                 `json:"ephemeral,omitempty"`
+	Focused           bool                 `json:"focused,omitempty"`
+	TargetBlockId     string               `json:"targetblockid,omitempty"`
+	TargetAction      string               `json:"targetaction,omitempty"` // "replace", "splitright", "splitdown", "splitleft", "splitup"
+	TargetSizePercent int                  `json:"targetsizepercent,omitempty"`
 }
 
 type CommandCreateSubBlockData struct {
