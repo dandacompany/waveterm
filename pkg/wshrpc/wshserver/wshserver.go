@@ -206,9 +206,15 @@ func (ws *WshServer) DeleteTabCommand(ctx context.Context, data wshrpc.CommandDe
 	if len(workspace.TabIds) <= 1 && !data.CloseWindow {
 		return fmt.Errorf("cannot delete the last tab in a workspace, pass closewindow to close the window instead")
 	}
-	windowId, err := wstore.DBFindWindowForWorkspaceId(ctx, workspaceId)
-	if err != nil && data.CloseWindow {
-		return fmt.Errorf("error finding window for workspace: %w", err)
+	var windowId string
+	if data.CloseWindow {
+		windowId, err = wstore.DBFindWindowForWorkspaceId(ctx, workspaceId)
+		if err != nil {
+			return fmt.Errorf("error finding window for workspace: %w", err)
+		}
+		if windowId == "" {
+			return fmt.Errorf("no window found for workspace %s, cannot close it", workspaceId)
+		}
 	}
 	newActiveTabId, err := wcore.DeleteTab(ctx, workspaceId, data.TabId, false)
 	if err != nil {
