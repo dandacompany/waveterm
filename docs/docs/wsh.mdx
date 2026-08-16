@@ -99,9 +99,11 @@ wsh getmeta
 Tabs, block placement, and terminal input can be scripted together:
 
 ```sh
-# Make a dedicated tab and split it into two terminals
+# Make a dedicated tab -- it comes up with one terminal -- and park it first in the tab bar
 wsh tab create logs
-wsh createblock term --tab logs
+wsh tab move logs 1
+
+# Split it, giving the new terminal 40% of the pair
 wsh createblock term --tab logs --target 1 --position right --size 40
 
 # Start the dev server in the left terminal

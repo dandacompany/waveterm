@@ -127,6 +127,19 @@ func tabCreateRun(cmd *cobra.Command, args []string) (rtnErr error) {
 	if err != nil {
 		return err
 	}
+	// creating a duplicate is allowed, matching the GUI, but it silently costs the
+	// caller the ability to address either tab by that name -- say so now rather than
+	// letting the next command fail with an ambiguity error
+	if name != "" {
+		if entries, listErr := listTabEntries(); listErr == nil {
+			for _, entry := range entries {
+				if entry.Name == name {
+					WriteStderr("warning: a tab named %q already exists; use a tab number or id to address them\n", name)
+					break
+				}
+			}
+		}
+	}
 	tabId, err := wshclient.CreateTabCommand(RpcClient, wshrpc.CommandCreateTabData{
 		WorkspaceId: wsId,
 		Name:        name,
