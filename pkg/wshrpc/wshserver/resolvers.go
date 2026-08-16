@@ -78,6 +78,16 @@ func parseSimpleId(simpleId string) (discriminator string, value string, err err
 	return "", "", fmt.Errorf("invalid simple id format: %s", simpleId)
 }
 
+func tabIdForResolve(ctx context.Context, data wshrpc.CommandResolveIdsData) (string, error) {
+	if data.TabId != "" {
+		return data.TabId, nil
+	}
+	if data.BlockId == "" {
+		return "", fmt.Errorf("no blockid or tabid in request")
+	}
+	return wstore.DBFindTabForBlockId(ctx, data.BlockId)
+}
+
 // Individual resolvers
 func resolveThis(ctx context.Context, data wshrpc.CommandResolveIdsData, value string) (*waveobj.ORef, error) {
 	if data.BlockId == "" {
@@ -138,7 +148,7 @@ func resolveTabNum(ctx context.Context, data wshrpc.CommandResolveIdsData, value
 		return nil, fmt.Errorf("error parsing simple tab num: %v", err)
 	}
 
-	curTabId, err := wstore.DBFindTabForBlockId(ctx, data.BlockId)
+	curTabId, err := tabIdForResolve(ctx, data)
 	if err != nil {
 		return nil, fmt.Errorf("error finding tab for block: %v", err)
 	}
@@ -169,9 +179,9 @@ func resolveBlock(ctx context.Context, data wshrpc.CommandResolveIdsData, value 
 		return nil, fmt.Errorf("error parsing block number: %v", err)
 	}
 
-	tabId, err := wstore.DBFindTabForBlockId(ctx, data.BlockId)
+	tabId, err := tabIdForResolve(ctx, data)
 	if err != nil {
-		return nil, fmt.Errorf("error finding tab for blockid %s: %w", data.BlockId, err)
+		return nil, fmt.Errorf("error finding tab for resolve request: %w", err)
 	}
 
 	tab, err := wstore.DBGet[*waveobj.Tab](ctx, tabId)
@@ -217,7 +227,7 @@ func resolveView(ctx context.Context, data wshrpc.CommandResolveIdsData, value s
 		return nil, fmt.Errorf("invalid view instance number: %d", instanceNum)
 	}
 	// Get current tab
-	tabId, err := wstore.DBFindTabForBlockId(ctx, data.BlockId)
+	tabId, err := tabIdForResolve(ctx, data)
 	if err != nil {
 		return nil, fmt.Errorf("error finding tab: %v", err)
 	}

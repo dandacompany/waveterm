@@ -277,6 +277,7 @@ type CommandSetMetaData struct {
 
 type CommandResolveIdsData struct {
 	BlockId string   `json:"blockid"`
+	TabId   string   `json:"tabid,omitempty"`
 	Ids     []string `json:"ids"`
 }
 

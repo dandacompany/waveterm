@@ -625,6 +625,7 @@ declare global {
     // wshrpc.CommandResolveIdsData
     type CommandResolveIdsData = {
         blockid: string;
+        tabid?: string;
         ids: string[];
     };
 
