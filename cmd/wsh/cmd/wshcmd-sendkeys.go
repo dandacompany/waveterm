@@ -122,7 +122,7 @@ var sendKeysCmd = &cobra.Command{
 		"  wsh sendkeys -b 2 --keys C-c\n" +
 		"  wsh sendkeys -b 2 --keys Up Up Enter\n" +
 		"  wsh sendkeys --tab logs -b 1 --signal SIGINT",
-	Args:                  cobra.MaximumNArgs(1),
+	Args:                  cobra.ArbitraryArgs,
 	RunE:                  sendKeysRun,
 	PreRunE:               preRunSetupRpcClient,
 	DisableFlagsInUseLine: true,
@@ -136,30 +136,71 @@ func init() {
 	rootCmd.AddCommand(sendKeysCmd)
 }
 
+// sendKeysResolved is the result of resolving the sendkeys mode (text, --keys, or --signal)
+// from parsed flags and positional args.
+type sendKeysResolved struct {
+	SigName   string
+	InputData []byte
+}
+
+// resolveSendKeysInput interprets the parsed --keys/--signal/--enter flags together with
+// the cobra positional args and decides which of the three mutually-exclusive modes applies.
+//
+// --keys is bound with StringSliceVar, which only consumes one argument per occurrence, so the
+// documented multi-key form (`--keys Up Up Enter`) relies on every remaining positional arg being
+// treated as an additional key name rather than as literal text.
+func resolveSendKeysInput(args []string, keysFlag []string, signal string, enter bool) (*sendKeysResolved, error) {
+	hasKeys := len(keysFlag) > 0
+	hasSignal := signal != ""
+
+	if hasSignal {
+		if hasKeys || len(args) > 0 {
+			return nil, fmt.Errorf("text, --keys, and --signal are mutually exclusive")
+		}
+		if enter {
+			return nil, fmt.Errorf("--enter only applies to a text argument")
+		}
+		return &sendKeysResolved{SigName: signal}, nil
+	}
+
+	if hasKeys {
+		if enter {
+			return nil, fmt.Errorf("--enter only applies to a text argument")
+		}
+		allKeys := make([]string, 0, len(keysFlag)+len(args))
+		allKeys = append(allKeys, keysFlag...)
+		allKeys = append(allKeys, args...)
+		payload, err := keyNamesToBytes(allKeys)
+		if err != nil {
+			return nil, err
+		}
+		return &sendKeysResolved{InputData: payload}, nil
+	}
+
+	if len(args) == 0 {
+		return nil, fmt.Errorf("provide text, --keys, or --signal")
+	}
+	if len(args) > 1 {
+		return nil, fmt.Errorf("text, --keys, and --signal are mutually exclusive")
+	}
+	payload := []byte(args[0])
+	if enter {
+		payload = append(payload, '\r')
+	}
+	return &sendKeysResolved{InputData: payload}, nil
+}
+
 func sendKeysRun(cmd *cobra.Command, args []string) (rtnErr error) {
 	defer func() {
 		sendActivity("sendkeys", rtnErr == nil)
 	}()
 
-	modeCount := 0
-	if len(args) > 0 {
-		modeCount++
-	}
-	if len(sendKeysNames) > 0 {
-		modeCount++
-	}
-	if sendKeysSignal != "" {
-		modeCount++
-	}
-	if modeCount == 0 {
-		OutputHelpMessage(cmd)
-		return fmt.Errorf("provide text, --keys, or --signal")
-	}
-	if modeCount > 1 {
-		return fmt.Errorf("text, --keys, and --signal are mutually exclusive")
-	}
-	if sendKeysEnter && len(args) == 0 {
-		return fmt.Errorf("--enter only applies to a text argument")
+	resolved, err := resolveSendKeysInput(args, sendKeysNames, sendKeysSignal, sendKeysEnter)
+	if err != nil {
+		if len(args) == 0 && len(sendKeysNames) == 0 && sendKeysSignal == "" {
+			OutputHelpMessage(cmd)
+		}
+		return err
 	}
 
 	scopeTabId, err := resolveTabScopeArg(sendKeysTab)
@@ -185,22 +226,10 @@ func sendKeysRun(cmd *cobra.Command, args []string) (rtnErr error) {
 	}
 
 	inputData := wshrpc.CommandBlockInputData{BlockId: fullORef.OID}
-	if sendKeysSignal != "" {
-		inputData.SigName = sendKeysSignal
+	if resolved.SigName != "" {
+		inputData.SigName = resolved.SigName
 	} else {
-		var payload []byte
-		if len(sendKeysNames) > 0 {
-			payload, err = keyNamesToBytes(sendKeysNames)
-			if err != nil {
-				return err
-			}
-		} else {
-			payload = []byte(args[0])
-			if sendKeysEnter {
-				payload = append(payload, '\r')
-			}
-		}
-		inputData.InputData64 = base64.StdEncoding.EncodeToString(payload)
+		inputData.InputData64 = base64.StdEncoding.EncodeToString(resolved.InputData)
 	}
 
 	err = wshclient.ControllerInputCommand(RpcClient, inputData, &wshrpc.RpcOpts{Timeout: sendKeysRpcTimeout})

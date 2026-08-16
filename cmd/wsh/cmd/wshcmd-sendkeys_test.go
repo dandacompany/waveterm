@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestKeyNameToBytes(t *testing.T) {
@@ -75,6 +77,63 @@ func TestKeyNamesToBytes(t *testing.T) {
 	want := []byte{0x1b, '[', 'A', 0x1b, '[', 'A', '\r'}
 	if !bytes.Equal(got, want) {
 		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+// buildTestSendKeysCmd mirrors sendKeysCmd's Args and flag registration so the test drives
+// cobra's own argument parsing rather than calling resolveSendKeysInput directly -- this is
+// the layer that a pure-function test cannot exercise.
+func buildTestSendKeysCmd(resolved **sendKeysResolved, resolveErr *error) *cobra.Command {
+	var keys []string
+	var signal string
+	var enter bool
+	cmd := &cobra.Command{
+		Use:  "sendkeys",
+		Args: cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			r, err := resolveSendKeysInput(args, keys, signal, enter)
+			*resolved = r
+			*resolveErr = err
+			return nil
+		},
+	}
+	cmd.Flags().StringSliceVar(&keys, "keys", nil, "named control keys to send")
+	cmd.Flags().StringVar(&signal, "signal", "", "signal to send instead of input")
+	cmd.Flags().BoolVar(&enter, "enter", false, "append a carriage return after the text")
+	return cmd
+}
+
+func TestSendKeysCmdParsesMultiArgKeys(t *testing.T) {
+	var resolved *sendKeysResolved
+	var resolveErr error
+	cmd := buildTestSendKeysCmd(&resolved, &resolveErr)
+	cmd.SetArgs([]string{"--keys", "Up", "Up", "Enter"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected cobra execution error: %v", err)
+	}
+	if resolveErr != nil {
+		t.Fatalf("unexpected resolve error: %v", resolveErr)
+	}
+	want := []byte{0x1b, '[', 'A', 0x1b, '[', 'A', '\r'}
+	if !bytes.Equal(resolved.InputData, want) {
+		t.Errorf("got %v, want %v", resolved.InputData, want)
+	}
+}
+
+func TestSendKeysCmdParsesCommaKeys(t *testing.T) {
+	var resolved *sendKeysResolved
+	var resolveErr error
+	cmd := buildTestSendKeysCmd(&resolved, &resolveErr)
+	cmd.SetArgs([]string{"--keys", "Up,Up,Enter"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected cobra execution error: %v", err)
+	}
+	if resolveErr != nil {
+		t.Fatalf("unexpected resolve error: %v", resolveErr)
+	}
+	want := []byte{0x1b, '[', 'A', 0x1b, '[', 'A', '\r'}
+	if !bytes.Equal(resolved.InputData, want) {
+		t.Errorf("got %v, want %v", resolved.InputData, want)
 	}
 }
 
