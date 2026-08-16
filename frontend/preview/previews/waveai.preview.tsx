@@ -42,7 +42,9 @@ export default function WaveAIPreview() {
 
     return (
         <div className="flex w-full max-w-[960px] flex-col gap-2 px-6 py-6">
-            <div className="text-xs text-muted font-mono">full deprecated waveai block with the FE-only replacement UI</div>
+            <div className="text-xs text-muted font-mono">
+                full deprecated waveai block with the FE-only replacement UI
+            </div>
             <div className="rounded-md border border-border bg-panel p-4">
                 <div className="h-[540px]">
                     <Block preview={false} nodeModel={nodeModel} />

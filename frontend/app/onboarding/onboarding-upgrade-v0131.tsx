@@ -6,8 +6,8 @@ const UpgradeOnboardingModal_v0_13_1_Content = () => {
         <div className="flex flex-col items-start gap-6 w-full mb-4 unselectable">
             <div className="text-secondary leading-relaxed">
                 <p className="mb-0">
-                    Wave v0.13.1 focuses on Windows platform improvements, Wave AI visual updates, and enhanced
-                    terminal navigation.
+                    Wave v0.13.1 focuses on Windows platform improvements, Wave AI visual updates, and enhanced terminal
+                    navigation.
                 </p>
             </div>
 
@@ -49,8 +49,8 @@ const UpgradeOnboardingModal_v0_13_1_Content = () => {
                     <div className="text-secondary leading-5">
                         <ul className="list-disc list-outside space-y-1 pl-5">
                             <li>
-                                <strong>Refreshed Visual Design</strong> - Complete UI refresh with transparency
-                                support for custom backgrounds
+                                <strong>Refreshed Visual Design</strong> - Complete UI refresh with transparency support
+                                for custom backgrounds
                             </li>
                             <li>
                                 <strong>BYOK Without Telemetry</strong> - Wave AI now works with bring-your-own-key and
@@ -70,8 +70,8 @@ const UpgradeOnboardingModal_v0_13_1_Content = () => {
                     <div className="text-secondary leading-5">
                         <ul className="list-disc list-outside space-y-1 pl-5">
                             <li>
-                                <strong>New Scrolling Keybindings</strong> - Added Shift+Home, Shift+End,
-                                Shift+PageUp, and Shift+PageDown for better navigation
+                                <strong>New Scrolling Keybindings</strong> - Added Shift+Home, Shift+End, Shift+PageUp,
+                                and Shift+PageDown for better navigation
                             </li>
                         </ul>
                     </div>

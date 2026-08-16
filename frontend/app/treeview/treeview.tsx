@@ -4,7 +4,7 @@
 import { makeIconClass } from "@/util/util";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import React, {
+import {
     CSSProperties,
     KeyboardEvent,
     MouseEvent,
@@ -194,7 +194,11 @@ function getNodeIcon(node: TreeNodeData, isExpanded: boolean): string {
         return "file-pdf";
     }
     const extension = normalizeLabel(node).split(".").pop()?.toLocaleLowerCase();
-    if (["js", "jsx", "ts", "tsx", "go", "py", "java", "c", "cpp", "h", "hpp", "json", "yaml", "yml"].includes(extension)) {
+    if (
+        ["js", "jsx", "ts", "tsx", "go", "py", "java", "c", "cpp", "h", "hpp", "json", "yaml", "yml"].includes(
+            extension
+        )
+    ) {
         return "file-code";
     }
     if (["md", "txt", "log"].includes(extension)) {
@@ -223,7 +227,10 @@ export const TreeView = forwardRef<TreeViewRef, TreeViewProps>((props, ref) => {
     const [nodesById, setNodesById] = useState<Map<string, TreeNodeData>>(
         () =>
             new Map(
-                Object.entries(initialNodes).map(([id, node]) => [id, { ...node, childrenStatus: node.childrenStatus ?? "unloaded" }])
+                Object.entries(initialNodes).map(([id, node]) => [
+                    id,
+                    { ...node, childrenStatus: node.childrenStatus ?? "unloaded" },
+                ])
             )
     );
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -244,11 +251,11 @@ export const TreeView = forwardRef<TreeViewRef, TreeViewProps>((props, ref) => {
         );
     }, [initialNodes]);
 
-    const visibleRows = useMemo(() => buildVisibleRows(nodesById, rootIds, expandedIds), [nodesById, rootIds, expandedIds]);
-    const idToIndex = useMemo(
-        () => new Map(visibleRows.map((row, index) => [row.id, index])),
-        [visibleRows]
+    const visibleRows = useMemo(
+        () => buildVisibleRows(nodesById, rootIds, expandedIds),
+        [nodesById, rootIds, expandedIds]
     );
+    const idToIndex = useMemo(() => new Map(visibleRows.map((row, index) => [row.id, index])), [visibleRows]);
     const virtualizer = useVirtualizer({
         count: visibleRows.length,
         getScrollElement: () => scrollRef.current,
@@ -283,7 +290,13 @@ export const TreeView = forwardRef<TreeViewRef, TreeViewProps>((props, ref) => {
 
     const loadChildren = async (id: string) => {
         const currentNode = nodesById.get(id);
-        if (currentNode == null || !currentNode.isDirectory || currentNode.notfound || currentNode.staterror || fetchDir == null) {
+        if (
+            currentNode == null ||
+            !currentNode.isDirectory ||
+            currentNode.notfound ||
+            currentNode.staterror ||
+            fetchDir == null
+        ) {
             return;
         }
         const status = currentNode.childrenStatus ?? "unloaded";
@@ -471,7 +484,10 @@ export const TreeView = forwardRef<TreeViewRef, TreeViewProps>((props, ref) => {
                             >
                                 <div
                                     className="flex items-center"
-                                    style={{ paddingLeft: row.depth * indentWidth, width: ChevronWidth + row.depth * indentWidth }}
+                                    style={{
+                                        paddingLeft: row.depth * indentWidth,
+                                        width: ChevronWidth + row.depth * indentWidth,
+                                    }}
                                 >
                                     {row.kind === "node" && row.isDirectory && row.hasChildren ? (
                                         <button
@@ -497,7 +513,10 @@ export const TreeView = forwardRef<TreeViewRef, TreeViewProps>((props, ref) => {
                                         <i
                                             className={makeIconClass(getNodeIcon(row.node, row.isExpanded), true)}
                                             style={{
-                                                color: row.node.notfound || row.node.staterror ? "var(--color-error)" : "inherit",
+                                                color:
+                                                    row.node.notfound || row.node.staterror
+                                                        ? "var(--color-error)"
+                                                        : "inherit",
                                             }}
                                         />
                                         <span

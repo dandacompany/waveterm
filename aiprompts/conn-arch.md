@@ -52,21 +52,25 @@ Wave Terminal's connection system is designed to provide a unified interface for
 ### 1. Block Controllers (`pkg/blockcontroller/`)
 
 **Primary Files:**
+
 - [`blockcontroller.go`](../pkg/blockcontroller/blockcontroller.go) - Controller registry and orchestration
 - [`shellcontroller.go`](../pkg/blockcontroller/shellcontroller.go) - Shell/terminal controller implementation
 
 **Responsibilities:**
+
 - **Controller Registry**: Maintains a global map of active block controllers (`controllerRegistry`)
 - **Lifecycle Management**: Handles controller creation, starting, stopping, and switching
 - **Connection Verification**: Checks connection status before starting shell processes ([`CheckConnStatus()`](../pkg/blockcontroller/blockcontroller.go:360))
 - **Controller Types**: Supports different controller types (shell, cmd, tsunami)
 
 **Key Functions:**
+
 - [`ResyncController()`](../pkg/blockcontroller/blockcontroller.go:120) - Main entry point for synchronizing block state with desired controller
 - [`registerController()`](../pkg/blockcontroller/blockcontroller.go:84) - Registers a new controller, stopping any existing one
 - [`getController()`](../pkg/blockcontroller/blockcontroller.go:78) - Retrieves active controller for a block
 
 **ShellController Details:**
+
 - Implements the `Controller` interface
 - Manages shell processes via [`ShellProc`](../pkg/shellexec/shellexec.go:48)
 - Handles three connection types via `ConnUnion`:
@@ -85,14 +89,16 @@ Wave Terminal's connection system is designed to provide a unified interface for
 **Primary File:** [`conncontroller.go`](../pkg/remote/conncontroller/conncontroller.go)
 
 **Architecture:**
+
 - **Global Registry**: `clientControllerMap` maintains all SSH connections
-- **Connection Lifecycle**: 
+- **Connection Lifecycle**:
   ```
   init → connecting → connected → (running) → disconnected/error
   ```
 - **Thread Safety**: Each connection has its own lock (`SSHConn.Lock`)
 
 **SSHConn Structure:**
+
 ```go
 type SSHConn struct {
     Lock               *sync.Mutex
@@ -111,7 +117,8 @@ type SSHConn struct {
 ```
 
 **Key Responsibilities:**
-1. **SSH Client Management**: 
+
+1. **SSH Client Management**:
    - Establishes SSH connections using [`golang.org/x/crypto/ssh`](https://pkg.go.dev/golang.org/x/crypto/ssh)
    - Handles authentication (pubkey, password, keyboard-interactive)
    - Supports ProxyJump for multi-hop connections
@@ -134,6 +141,7 @@ type SSHConn struct {
    - Template: [`ConnServerCmdTemplate`](../pkg/remote/conncontroller/conncontroller.go:74)
 
 **Connection Flow:**
+
 ```
 1. GetConn(opts) - Retrieve or create connection
 2. Connect(ctx) - Initiate connection
@@ -147,6 +155,7 @@ type SSHConn struct {
 #### SSH Client (`pkg/remote/sshclient.go`)
 
 **Responsibilities:**
+
 - **Authentication Methods**:
   - Public key with optional passphrase ([`createPublicKeyCallback()`](../pkg/remote/sshclient.go:118))
   - Password authentication ([`createPasswordCallbackPrompt()`](../pkg/remote/sshclient.go:227))
@@ -171,11 +180,13 @@ type SSHConn struct {
 **Primary File:** [`wslconn.go`](../pkg/wslconn/wslconn.go)
 
 **Architecture:**
+
 - **Similar to SSH**: Parallel structure to `conncontroller` but for WSL
 - **Global Registry**: `clientControllerMap` for WSL connections
 - **Connection Naming**: `wsl://[distro-name]` (e.g., `wsl://Ubuntu`)
 
 **WslConn Structure:**
+
 ```go
 type WslConn struct {
     Lock               *sync.Mutex
@@ -190,12 +201,14 @@ type WslConn struct {
 ```
 
 **Key Differences from SSH:**
+
 - **No Network Socket**: WSL processes run locally, no SSH connection needed
 - **Domain Socket Path**: Uses predetermined path ([`wavebase.RemoteFullDomainSocketPath`](../pkg/wavebase/))
 - **Command Execution**: Uses `wsl.exe` command-line tool
 - **Simpler Authentication**: No auth needed, user already logged into Windows
 
 **Connection Flow:**
+
 ```
 1. GetWslConn(distroName) - Get/create WSL connection
 2. Connect(ctx) - Start connection process
@@ -210,6 +223,7 @@ type WslConn struct {
 **Primary File:** [`shellexec.go`](../pkg/shellexec/shellexec.go)
 
 **ShellProc Structure:**
+
 ```go
 type ShellProc struct {
     ConnName  string          // Connection identifier
@@ -221,11 +235,13 @@ type ShellProc struct {
 ```
 
 **ConnInterface Implementations:**
+
 - **Local**: [`CombinedConnInterface`](../pkg/shellexec/) wraps `os/exec.Cmd` with PTY
 - **SSH**: [`RemoteConnInterface`](../pkg/shellexec/) wraps SSH session
 - **WSL**: [`WslConnInterface`](../pkg/shellexec/) wraps WSL command
 
 **Process Startup Functions:**
+
 - [`StartLocalShellProc()`](../pkg/shellexec/) - Local shell processes
 - [`StartRemoteShellProc()`](../pkg/shellexec/) - SSH remote shells (with WSH)
 - [`StartRemoteShellProcNoWsh()`](../pkg/shellexec/) - SSH remote shells (no WSH)
@@ -233,6 +249,7 @@ type ShellProc struct {
 - [`StartWslShellProcNoWsh()`](../pkg/shellexec/) - WSL shells (no WSH)
 
 **Key Features:**
+
 - **PTY Management**: Pseudo-terminal for interactive shells
 - **Graceful Shutdown**: Sends SIGTERM, waits briefly, then SIGKILL
 - **Process Wrapping**: Abstracts differences between local/remote/WSL execution
@@ -244,21 +261,25 @@ type ShellProc struct {
 **Primary File:** [`ssh-impl.go`](../pkg/genconn/ssh-impl.go)
 
 **Interface Hierarchy:**
+
 ```go
 ShellClient -> ShellProcessController
 ```
 
 **SSHShellClient:**
+
 - Wraps `*ssh.Client`
 - Creates `SSHProcessController` for each command
 
 **SSHProcessController:**
+
 - Wraps `*ssh.Session`
 - Implements stdio piping (stdin, stdout, stderr)
 - Handles command lifecycle (Start, Wait, Kill)
 - Thread-safe with internal locking
 
 **Usage Pattern:**
+
 ```go
 client := genconn.MakeSSHShellClient(sshClient)
 proc, _ := client.MakeProcessController(cmdSpec)
@@ -306,6 +327,7 @@ proc.Wait()
 **Connection Name**: `"local"`, `"local:"`, or `""` (empty)
 
 **Workflow:**
+
 1. Block controller checks connection type via [`IsLocalConnName()`](../pkg/remote/conncontroller/conncontroller.go:80)
 2. No connection setup needed
 3. Shell process started directly via [`StartLocalShellProc()`](../pkg/shellexec/)
@@ -313,6 +335,7 @@ proc.Wait()
 5. WSH integration via environment variables
 
 **Special Case - Git Bash (Windows):**
+
 - Variant: `"local:gitbash"`
 - Requires special shell path detection
 - Uses Git Bash binary instead of default shell
@@ -392,12 +415,14 @@ proc.Wait()
 **WSH (Wave Shell Extensions) Details:**
 
 **What is WSH?**
+
 - Binary program (`wsh`) that runs on remote hosts
 - Provides RPC services for Wave Terminal
 - Written in Go, cross-platform
 - Versioned to match Wave Terminal version
 
 **WSH Components:**
+
 1. **wsh version**: Reports installed version
 2. **wsh connserver**: Long-running RPC server
    - Handles file operations
@@ -406,6 +431,7 @@ proc.Wait()
    - Communicates over domain socket
 
 **WSH Installation Process:**
+
 1. Check if wsh is installed: Run `wsh version`
 2. If not installed: Detect platform with `uname -sm`
 3. Get appropriate binary from local cache
@@ -414,6 +440,7 @@ proc.Wait()
 6. Restart connection process
 
 **With vs Without WSH:**
+
 - **With WSH**: Full RPC support, better integration, file sync
 - **Without WSH**: Basic shell only, limited features
 - Fallback to no-WSH mode on installation failure
@@ -423,6 +450,7 @@ proc.Wait()
 **Connection Name**: `"wsl://[distro]"` (e.g., `"wsl://Ubuntu"`)
 
 **Workflow:**
+
 ```
 1. GetWslConn(distroName) - Get/create WslConn
 2. conn.Connect(ctx) - Start connection
@@ -434,6 +462,7 @@ proc.Wait()
 ```
 
 **Key Differences from SSH:**
+
 - Uses `wsl.exe` command-line tool
 - No network connection overhead
 - Predetermined domain socket path
@@ -446,6 +475,7 @@ proc.Wait()
 **Implementation:** [`shellutil.TokenSwapEntry`](../pkg/util/shellutil/)
 
 **Flow:**
+
 1. ShellController creates swap token before starting process
 2. Token contains:
    - Socket name for RPC
@@ -458,6 +488,7 @@ proc.Wait()
 6. Token removed from map after use
 
 **Purpose:**
+
 - Avoid exposing JWT tokens in process listings
 - Enable shell integration without hardcoded values
 - Support multiple shells on same connection
@@ -467,12 +498,14 @@ proc.Wait()
 ### Connection Failures
 
 **SSH Connection Errors:**
+
 - Authentication failure → Prompt user (password, passphrase)
 - Host key mismatch → Prompt for verification
 - Network timeout → Status: "error", display error message
 - ProxyJump failure → Error shows which jump host failed
 
 **Recovery Mechanisms:**
+
 - [`conn.Reconnect(ctx)`](../pkg/remote/conncontroller/) - Close and re-establish connection
 - [`conn.WaitForConnect(ctx)`](../pkg/remote/conncontroller/) - Block until connected
 - Automatic fallback to no-WSH mode on installation failure
@@ -480,11 +513,13 @@ proc.Wait()
 ### Process Failures
 
 **Shell Process Errors:**
+
 - Process crash → WaitErr contains exit code
 - PTY failure → Captured in error message
 - I/O errors → Logged and surfaced to user
 
 **Cleanup:**
+
 - [`ShellProc.Close()`](../pkg/shellexec/shellexec.go:56) - Graceful then forceful kill
 - [`SSHConn.close_nolock()`](../pkg/remote/conncontroller/conncontroller.go:167) - Cleanup all resources
 - [`deleteController()`](../pkg/blockcontroller/blockcontroller.go:101) - Remove from registry
@@ -496,11 +531,13 @@ proc.Wait()
 **Source:** [`pkg/wconfig/`](../pkg/wconfig/)
 
 **Per-Connection Settings:**
+
 - `conn:wshenabled` - Enable/disable WSH
 - `conn:wshpath` - Custom WSH binary path
 - `conn:shellpath` - Custom shell path
 
 **Global Settings:**
+
 - `conn:askbeforewshinstall` - Prompt before WSH installation
 - Stored in `~/.waveterm/config/settings.json`
 - Per-connection overrides in `~/.waveterm/config/connections.json`
@@ -510,6 +547,7 @@ proc.Wait()
 **Source:** `~/.ssh/config`
 
 **Supported Directives:**
+
 - `Host` - Connection matching
 - `HostName` - Target hostname
 - `Port` - SSH port
@@ -527,6 +565,7 @@ proc.Wait()
 ### Synchronization Patterns
 
 **SSHConn/WslConn:**
+
 ```go
 conn.Lock.Lock()
 defer conn.Lock.Unlock()
@@ -534,18 +573,21 @@ defer conn.Lock.Unlock()
 ```
 
 **Atomic Flags:**
+
 ```go
 conn.WshEnabled.Load()    // Read WSH enabled status
 conn.WshEnabled.Store(v)  // Update atomically
 ```
 
 **Controller Registry:**
+
 ```go
 registryLock.RLock()       // Read lock for lookups
 registryLock.Lock()        // Write lock for modifications
 ```
 
 **ShellProc Completion:**
+
 ```go
 sp.CloseOnce.Do(func() {   // Ensure single execution
     sp.WaitErr = waitErr
@@ -560,11 +602,13 @@ sp.CloseOnce.Do(func() {   // Ensure single execution
 **Published via:** [`pkg/wps/`](../pkg/wps/) (Wave Publish/Subscribe)
 
 **Event Types:**
+
 - `Event_ConnChange` - Connection status changed
 - `Event_ControllerStatus` - Block controller status update
 - `Event_BlockFile` - Block file operation (terminal output)
 
 **Example:**
+
 ```go
 wps.Broker.Publish(wps.WaveEvent{
     Event: wps.Event_ConnChange,
@@ -574,22 +618,23 @@ wps.Broker.Publish(wps.WaveEvent{
 ```
 
 **Frontend Integration:**
+
 - Events received via WebSocket
 - Connection status updates UI
 - Real-time terminal output streaming
 
 ## Summary of Responsibilities
 
-| Component | Responsibilities |
-|-----------|-----------------|
+| Component            | Responsibilities                                              |
+| -------------------- | ------------------------------------------------------------- |
 | **blockcontroller/** | Block lifecycle, controller registry, connection coordination |
-| **shellcontroller** | Shell process management, ConnUnion abstraction, I/O handling |
-| **conncontroller/** | SSH connection lifecycle, WSH management, domain socket setup |
-| **wslconn/** | WSL connection lifecycle, parallel to SSH but for WSL |
-| **sshclient.go** | Low-level SSH: auth, known_hosts, ProxyJump |
-| **shellexec/** | Process execution abstraction, PTY management |
-| **genconn/** | Generic command execution interface |
-| **shellutil/** | Shell detection, integration files, environment setup |
+| **shellcontroller**  | Shell process management, ConnUnion abstraction, I/O handling |
+| **conncontroller/**  | SSH connection lifecycle, WSH management, domain socket setup |
+| **wslconn/**         | WSL connection lifecycle, parallel to SSH but for WSL         |
+| **sshclient.go**     | Low-level SSH: auth, known_hosts, ProxyJump                   |
+| **shellexec/**       | Process execution abstraction, PTY management                 |
+| **genconn/**         | Generic command execution interface                           |
+| **shellutil/**       | Shell detection, integration files, environment setup         |
 
 ## Key Design Principles
 

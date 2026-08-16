@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BlockModel } from "@/app/block/block-model";
-import { Modal } from "@/app/modals/modal";
 import { recordTEvent } from "@/app/store/global";
 import { cn, fireAndForget } from "@/util/util";
 import { useAtomValue } from "jotai";

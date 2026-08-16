@@ -127,8 +127,7 @@ export const ConnStatusOverlay = React.memo(
         const [overlayRefCallback, _, domRect] = useDimensionsWithCallbackRef(30);
         const width = domRect?.width;
         const [showError, setShowError] = React.useState(false);
-        const wshConfigEnabled =
-            jotai.useAtomValue(waveEnv.getConnConfigKeyAtom(connName, "conn:wshenabled")) ?? true;
+        const wshConfigEnabled = jotai.useAtomValue(waveEnv.getConnConfigKeyAtom(connName, "conn:wshenabled")) ?? true;
         const [showWshError, setShowWshError] = React.useState(false);
 
         React.useEffect(() => {

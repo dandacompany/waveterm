@@ -11,14 +11,14 @@ import { SysinfoViewModel } from "@/app/view/sysinfo/sysinfo";
 import { TsunamiViewModel } from "@/app/view/tsunami/tsunami";
 import { VDomModel } from "@/app/view/vdom/vdom-model";
 import { WaveEnv } from "@/app/waveenv/waveenv";
-import { atom } from "jotai";
-import { QuickTipsViewModel } from "../view/quicktipsview/quicktipsview";
-import { WaveConfigViewModel } from "../view/waveconfig/waveconfig-model";
-import { blockViewToIcon, blockViewToName } from "./blockutil";
 import { HelpViewModel } from "@/view/helpview/helpview";
 import { TermViewModel } from "@/view/term/term-model";
 import { WaveAiModel } from "@/view/waveai/waveai";
 import { WebViewModel } from "@/view/webview/webview";
+import { atom } from "jotai";
+import { QuickTipsViewModel } from "../view/quicktipsview/quicktipsview";
+import { WaveConfigViewModel } from "../view/waveconfig/waveconfig-model";
+import { blockViewToIcon, blockViewToName } from "./blockutil";
 
 const BlockRegistry: Map<string, ViewModelClass> = new Map();
 BlockRegistry.set("term", TermViewModel);

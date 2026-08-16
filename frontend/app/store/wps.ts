@@ -1,9 +1,9 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { isPreviewWindow } from "@/app/store/windowtype";
 import type { WshClient } from "@/app/store/wshclient";
 import { RpcApi } from "@/app/store/wshclientapi";
-import { isPreviewWindow } from "@/app/store/windowtype";
 import { isBlank } from "@/util/util";
 import { Subject } from "rxjs";
 

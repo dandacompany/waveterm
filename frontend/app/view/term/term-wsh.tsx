@@ -160,7 +160,7 @@ export class TermWshClient extends WshClient {
                 // after the lines have already been combined (because of potential wrapping)
                 // for now this isn't worth fixing, just noted
                 returnLines = lines.slice(lines.length - 1000);
-                returnStartLine = (totalLines - endBufferIndex) + (lines.length - 1000);
+                returnStartLine = totalLines - endBufferIndex + (lines.length - 1000);
             }
 
             return {

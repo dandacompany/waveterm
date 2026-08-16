@@ -1,17 +1,17 @@
 // Copyright 2025, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { BuilderAppPanelModel } from "@/builder/store/builder-apppanel-model";
-import { RpcApi } from "@/app/store/wshclientapi";
-import { TabRpcClient } from "@/app/store/wshrpcutil";
-import { atoms } from "@/store/global";
-import { globalStore } from "@/app/store/jotaiStore";
-import { useAtomValue } from "jotai";
-import { memo, useState, useEffect } from "react";
-import { Check, AlertTriangle } from "lucide-react";
 import { Tooltip } from "@/app/element/tooltip";
 import { Modal } from "@/app/modals/modal";
+import { globalStore } from "@/app/store/jotaiStore";
 import { modalsModel } from "@/app/store/modalmodel";
+import { RpcApi } from "@/app/store/wshclientapi";
+import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { BuilderAppPanelModel } from "@/builder/store/builder-apppanel-model";
+import { atoms } from "@/store/global";
+import { useAtomValue } from "jotai";
+import { AlertTriangle, Check } from "lucide-react";
+import { memo, useEffect, useState } from "react";
 
 type SecretRowProps = {
     secretName: string;
@@ -22,52 +22,69 @@ type SecretRowProps = {
     onSetAndMapDefault: (secretName: string) => void;
 };
 
-const SecretRow = memo(({ secretName, secretMeta, currentBinding, availableSecrets, onMapDefault, onSetAndMapDefault }: SecretRowProps) => {
-    const isMapped = currentBinding.trim().length > 0;
-    const isValid = isMapped && availableSecrets.includes(currentBinding);
-    const isInvalid = isMapped && !isValid;
-    const hasMatchingSecret = availableSecrets.includes(secretName);
+const SecretRow = memo(
+    ({
+        secretName,
+        secretMeta,
+        currentBinding,
+        availableSecrets,
+        onMapDefault,
+        onSetAndMapDefault,
+    }: SecretRowProps) => {
+        const isMapped = currentBinding.trim().length > 0;
+        const isValid = isMapped && availableSecrets.includes(currentBinding);
+        const isInvalid = isMapped && !isValid;
+        const hasMatchingSecret = availableSecrets.includes(secretName);
 
-    return (
-        <div className="flex items-center gap-4 py-2 border-b border-border">
-            <Tooltip content={!isMapped ? "Secret is Not Mapped" : isValid ? "Secret Has a Valid Mapping" : "Secret Binding is Invalid"}>
-                <div className="flex items-center">
-                    {!isMapped && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
-                    {isInvalid && <AlertTriangle className="w-5 h-5 text-red-500" />}
-                    {isValid && <Check className="w-5 h-5 text-green-500" />}
+        return (
+            <div className="flex items-center gap-4 py-2 border-b border-border">
+                <Tooltip
+                    content={
+                        !isMapped
+                            ? "Secret is Not Mapped"
+                            : isValid
+                              ? "Secret Has a Valid Mapping"
+                              : "Secret Binding is Invalid"
+                    }
+                >
+                    <div className="flex items-center">
+                        {!isMapped && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
+                        {isInvalid && <AlertTriangle className="w-5 h-5 text-red-500" />}
+                        {isValid && <Check className="w-5 h-5 text-green-500" />}
+                    </div>
+                </Tooltip>
+                <div className="flex-1 flex items-center gap-2">
+                    <span className="font-medium text-primary">{secretName}</span>
+                    {!secretMeta.optional && (
+                        <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-500 rounded">Required</span>
+                    )}
+                    {secretMeta.optional && (
+                        <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-500 rounded">Optional</span>
+                    )}
+                    {secretMeta.desc && <span className="text-sm text-secondary">— {secretMeta.desc}</span>}
                 </div>
-            </Tooltip>
-            <div className="flex-1 flex items-center gap-2">
-                <span className="font-medium text-primary">{secretName}</span>
-                {!secretMeta.optional && (
-                    <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-500 rounded">Required</span>
-                )}
-                {secretMeta.optional && (
-                    <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-500 rounded">Optional</span>
-                )}
-                {secretMeta.desc && <span className="text-sm text-secondary">— {secretMeta.desc}</span>}
+                <div className="flex items-center gap-2">
+                    {!isMapped && hasMatchingSecret && (
+                        <button
+                            onClick={() => onMapDefault(secretName)}
+                            className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                            Map Default
+                        </button>
+                    )}
+                    {!isMapped && !hasMatchingSecret && (
+                        <button
+                            onClick={() => onSetAndMapDefault(secretName)}
+                            className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                            Set and Map Default
+                        </button>
+                    )}
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-                {!isMapped && hasMatchingSecret && (
-                    <button
-                        onClick={() => onMapDefault(secretName)}
-                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
-                    >
-                        Map Default
-                    </button>
-                )}
-                {!isMapped && !hasMatchingSecret && (
-                    <button
-                        onClick={() => onSetAndMapDefault(secretName)}
-                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
-                    >
-                        Set and Map Default
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-});
+        );
+    }
+);
 
 SecretRow.displayName = "SecretRow";
 
@@ -148,9 +165,7 @@ const SetSecretDialog = memo(({ secretName, onSetAndMap }: SetSecretDialogProps)
                         autoFocus
                         disabled={isSubmitting}
                     />
-                    <div className="text-xs text-secondary">
-                        Secrets are stored securely in Wave's secret store
-                    </div>
+                    <div className="text-xs text-secondary">Secrets are stored securely in Wave's secret store</div>
                 </div>
             </div>
         </Modal>
@@ -200,7 +215,7 @@ const BuilderSecretTab = memo(() => {
 
     const handleMapDefault = async (secretName: string) => {
         const newBindings = { ...secretBindings, [secretName]: secretName };
-        
+
         try {
             const appId = globalStore.get(atoms.builderAppId);
             await RpcApi.WriteAppSecretBindingsCommand(TabRpcClient, {
@@ -223,9 +238,9 @@ const BuilderSecretTab = memo(() => {
     const handleSetAndMap = async (secretName: string, secretValue: string) => {
         await RpcApi.SetSecretsCommand(TabRpcClient, { [secretName]: secretValue });
         setAvailableSecrets((prev) => [...prev, secretName]);
-        
+
         const newBindings = { ...secretBindings, [secretName]: secretName };
-        
+
         try {
             const appId = globalStore.get(atoms.builderAppId);
             await RpcApi.WriteAppSecretBindingsCommand(TabRpcClient, {
@@ -264,9 +279,7 @@ const BuilderSecretTab = memo(() => {
 
             <div className="flex-1 overflow-auto">
                 {sortedSecretEntries.length === 0 ? (
-                    <div className="text-secondary text-center py-8">
-                        No secrets defined in this app manifest.
-                    </div>
+                    <div className="text-secondary text-center py-8">No secrets defined in this app manifest.</div>
                 ) : (
                     <div className="space-y-1">
                         {sortedSecretEntries.map(([secretName, secretMeta]) => (

@@ -11,6 +11,7 @@ Wave AI is a chat-based AI assistant feature integrated into Wave Terminal. It p
 #### Core Components
 
 **1. WaveAiModel Class**
+
 - **Purpose**: Main view model implementing the `ViewModel` interface
 - **Responsibilities**:
   - State management using Jotai atoms
@@ -20,6 +21,7 @@ Wave AI is a chat-based AI assistant feature integrated into Wave Terminal. It p
   - UI state coordination
 
 **2. AiWshClient Class**
+
 - **Purpose**: Specialized WSH RPC client for AI operations
 - **Extends**: `WshClient`
 - **Responsibilities**:
@@ -27,6 +29,7 @@ Wave AI is a chat-based AI assistant feature integrated into Wave Terminal. It p
   - Route messages to the model's `sendMessage` method
 
 **3. React Components**
+
 - **WaveAi**: Main container component
 - **ChatWindow**: Scrollable message display with auto-scroll behavior
 - **ChatItem**: Individual message renderer with role-based styling
@@ -35,35 +38,39 @@ Wave AI is a chat-based AI assistant feature integrated into Wave Terminal. It p
 #### State Management (Jotai Atoms)
 
 **Message State**:
+
 ```typescript
-messagesAtom: PrimitiveAtom<Array<ChatMessageType>>
-messagesSplitAtom: SplitAtom<Array<ChatMessageType>>
-latestMessageAtom: Atom<ChatMessageType>
-addMessageAtom: WritableAtom<unknown, [message: ChatMessageType], void>
-updateLastMessageAtom: WritableAtom<unknown, [text: string, isUpdating: boolean], void>
-removeLastMessageAtom: WritableAtom<unknown, [], void>
+messagesAtom: PrimitiveAtom<Array<ChatMessageType>>;
+messagesSplitAtom: SplitAtom<Array<ChatMessageType>>;
+latestMessageAtom: Atom<ChatMessageType>;
+addMessageAtom: WritableAtom<unknown, [message: ChatMessageType], void>;
+updateLastMessageAtom: WritableAtom<unknown, [text: string, isUpdating: boolean], void>;
+removeLastMessageAtom: WritableAtom<unknown, [], void>;
 ```
 
 **Configuration State**:
+
 ```typescript
-presetKey: Atom<string>           // Current AI preset selection
-presetMap: Atom<{[k: string]: MetaType}>  // Available AI presets
-mergedPresets: Atom<MetaType>     // Merged configuration hierarchy
-aiOpts: Atom<WaveAIOptsType>      // Final AI options for requests
+presetKey: Atom<string>; // Current AI preset selection
+presetMap: Atom<{ [k: string]: MetaType }>; // Available AI presets
+mergedPresets: Atom<MetaType>; // Merged configuration hierarchy
+aiOpts: Atom<WaveAIOptsType>; // Final AI options for requests
 ```
 
 **UI State**:
+
 ```typescript
-locked: PrimitiveAtom<boolean>    // Prevents input during AI response
-viewIcon: Atom<string>            // Header icon
-viewName: Atom<string>            // Header title
-viewText: Atom<HeaderElem[]>      // Dynamic header elements
-endIconButtons: Atom<IconButtonDecl[]>  // Header action buttons
+locked: PrimitiveAtom<boolean>; // Prevents input during AI response
+viewIcon: Atom<string>; // Header icon
+viewName: Atom<string>; // Header title
+viewText: Atom<HeaderElem[]>; // Dynamic header elements
+endIconButtons: Atom<IconButtonDecl[]>; // Header action buttons
 ```
 
 #### Configuration Hierarchy
 
 The AI configuration follows a three-tier hierarchy (lowest to highest priority):
+
 1. **Global Settings**: `atoms.settingsAtom["ai:*"]`
 2. **Preset Configuration**: `presets[presetKey]["ai:*"]`
 3. **Block Metadata**: `block.meta["ai:*"]`
@@ -73,7 +80,7 @@ Configuration is merged using `mergeMeta()` utility, allowing fine-grained overr
 #### Data Flow - Frontend
 
 ```
-User Input → sendMessage() → 
+User Input → sendMessage() →
 ├── Add user message to UI
 ├── Create WaveAIStreamRequest
 ├── Call RpcApi.StreamWaveAiCommand()
@@ -89,6 +96,7 @@ User Input → sendMessage() →
 #### Core Interface
 
 **AIBackend Interface**:
+
 ```go
 type AIBackend interface {
     StreamCompletion(
@@ -101,14 +109,16 @@ type AIBackend interface {
 #### Backend Implementations
 
 **1. OpenAIBackend** (`openaibackend.go`)
+
 - **Providers**: OpenAI, Azure OpenAI, Cloudflare Azure
-- **Features**: 
+- **Features**:
   - Reasoning model support (o1, o3, o4, gpt-5)
   - Proxy support
   - Multiple API types (OpenAI, Azure, AzureAD, CloudflareAzure)
 - **Streaming**: Uses `go-openai` library for SSE streaming
 
 **2. AnthropicBackend** (`anthropicbackend.go`)
+
 - **Provider**: Anthropic Claude
 - **Features**:
   - Custom SSE parser for Anthropic's event format
@@ -117,17 +127,20 @@ type AIBackend interface {
 - **Events**: `message_start`, `content_block_delta`, `message_stop`, etc.
 
 **3. WaveAICloudBackend** (`cloudbackend.go`)
+
 - **Provider**: Wave's cloud proxy service
 - **Transport**: WebSocket connection to Wave cloud
-- **Features**: 
+- **Features**:
   - Fallback when no API token/baseURL provided
   - Built-in rate limiting and abuse protection
 
 **4. PerplexityBackend** (`perplexitybackend.go`)
+
 - **Provider**: Perplexity AI
 - **Implementation**: Similar to OpenAI backend
 
 **5. GoogleBackend** (`googlebackend.go`)
+
 - **Provider**: Google AI (Gemini)
 - **Implementation**: Custom integration for Google's API
 
@@ -162,6 +175,7 @@ func RunAICommand(ctx context.Context, request wshrpc.WaveAIStreamRequest) chan 
 **Type**: Response Stream (one request, multiple responses)
 
 **Request Type** (`WaveAIStreamRequest`):
+
 ```go
 type WaveAIStreamRequest struct {
     ClientId string                    `json:"clientid,omitempty"`
@@ -171,6 +185,7 @@ type WaveAIStreamRequest struct {
 ```
 
 **Response Type** (`WaveAIPacketType`):
+
 ```go
 type WaveAIPacketType struct {
     Type         string           `json:"type"`
@@ -187,6 +202,7 @@ type WaveAIPacketType struct {
 #### Configuration Types
 
 **AI Options** (`WaveAIOptsType`):
+
 ```go
 type WaveAIOptsType struct {
     Model      string `json:"model"`
@@ -207,11 +223,13 @@ type WaveAIOptsType struct {
 #### Chat History Storage
 
 **Frontend**:
+
 - **Method**: `fetchWaveFile(blockId, "aidata")`
 - **Format**: JSON array of `WaveAIPromptMessageType`
 - **Sliding Window**: Last 30 messages (`slidingWindowSize = 30`)
 
 **Backend**:
+
 - **Service**: `BlockService.SaveWaveAiData(blockId, history)`
 - **Storage**: Block-associated file storage
 - **Persistence**: Automatic save after each complete exchange
@@ -219,16 +237,18 @@ type WaveAIOptsType struct {
 #### Message Format
 
 **UI Messages** (`ChatMessageType`):
+
 ```typescript
 interface ChatMessageType {
-    id: string;
-    user: string;        // "user" | "assistant" | "error"
-    text: string;
-    isUpdating?: boolean;
+  id: string;
+  user: string; // "user" | "assistant" | "error"
+  text: string;
+  isUpdating?: boolean;
 }
 ```
 
 **Stored Messages** (`WaveAIPromptMessageType`):
+
 ```go
 type WaveAIPromptMessageType struct {
     Role    string `json:"role"`     // "user" | "assistant" | "system" | "error"
@@ -265,7 +285,7 @@ type WaveAIPromptMessageType struct {
 #### Input Handling
 
 - **Auto-resize**: Textarea grows/shrinks with content (max 5 lines)
-- **Keyboard Navigation**: 
+- **Keyboard Navigation**:
   - Enter to send
   - Cmd+L to clear history
   - Arrow keys for code block selection
@@ -282,6 +302,7 @@ type WaveAIPromptMessageType struct {
 #### Preset System
 
 **Preset Structure**:
+
 ```json
 {
   "ai@preset-name": {
@@ -299,6 +320,7 @@ type WaveAIPromptMessageType struct {
 ```
 
 **Configuration Keys**:
+
 - `ai:model` - AI model name
 - `ai:apitype` - Provider type (openai, anthropic, perplexity, google)
 - `ai:apitoken` - API authentication token

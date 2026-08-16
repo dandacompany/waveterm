@@ -70,11 +70,10 @@ describe("ContextMenuModel", () => {
             order.push(`close:${item?.label ?? "null"}`);
         });
 
-        model.showContextMenu(
-            [{ label: "Open", click: itemClick }],
-            { stopPropagation: vi.fn() } as any,
-            { onSelect, onClose }
-        );
+        model.showContextMenu([{ label: "Open", click: itemClick }], { stopPropagation: vi.fn() } as any, {
+            onSelect,
+            onClose,
+        });
         const menuId = showContextMenu.mock.calls[0][1][0].id;
         contextMenuCallback(menuId);
 
@@ -120,11 +119,10 @@ describe("ContextMenuModel", () => {
             order.push(`close:${item == null ? "null" : item.label}`);
         });
 
-        model.showContextMenu(
-            [{ label: "Open", click: vi.fn() }],
-            { stopPropagation: vi.fn() } as any,
-            { onCancel, onClose }
-        );
+        model.showContextMenu([{ label: "Open", click: vi.fn() }], { stopPropagation: vi.fn() } as any, {
+            onCancel,
+            onClose,
+        });
         contextMenuCallback(null);
 
         expect(order).toEqual(["cancel", "close:null"]);

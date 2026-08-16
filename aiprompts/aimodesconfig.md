@@ -5,6 +5,7 @@
 Wave Terminal's AI modes configuration system allows users to define custom AI assistants with different providers, models, and capabilities. The configuration is stored in `~/.waveterm/config/waveai.json` and provides a flexible way to configure multiple AI modes that appear in the Wave AI panel.
 
 **Key Design Decisions:**
+
 - Visual editor works on **valid JSON only** - if JSON is invalid, fall back to JSON editor
 - Default modes (`waveai@quick`, `waveai@balanced`, `waveai@deep`) are **read-only** in visual editor
 - Edits modify the **in-memory JSON directly** - changes saved via existing save button
@@ -26,26 +27,26 @@ type AIModeConfigType struct {
     DisplayIcon        string   `json:"display:icon,omitempty"`
     DisplayShortDesc   string   `json:"display:shortdesc,omitempty"`
     DisplayDescription string   `json:"display:description,omitempty"`
-    
+
     // Provider & Model
     Provider           string   `json:"ai:provider,omitempty"`     // wave, google, openrouter, openai, azure, azure-legacy, custom
     APIType            string   `json:"ai:apitype"`                // Required: anthropic-messages, openai-responses, openai-chat
     Model              string   `json:"ai:model"`                  // Required
-    
+
     // AI Behavior
     ThinkingLevel      string   `json:"ai:thinkinglevel,omitempty"` // low, medium, high
     Capabilities       []string `json:"ai:capabilities,omitempty"`  // pdfs, images, tools
-    
+
     // Connection Details
     Endpoint           string   `json:"ai:endpoint,omitempty"`
     APIVersion         string   `json:"ai:apiversion,omitempty"`
     APIToken           string   `json:"ai:apitoken,omitempty"`
     APITokenSecretName string   `json:"ai:apitokensecretname,omitempty"`
-    
+
     // Azure-Specific
     AzureResourceName  string   `json:"ai:azureresourcename,omitempty"`
     AzureDeployment    string   `json:"ai:azuredeployment,omitempty"`
-    
+
     // Wave AI Specific
     WaveAICloud        bool     `json:"waveai:cloud,omitempty"`
     WaveAIPremium      bool     `json:"waveai:premium,omitempty"`
@@ -96,6 +97,7 @@ Keys follow pattern: `provider@modename` (e.g., `waveai@quick`, `openai@gpt4`)
 **Location:** `pkg/wconfig/defaultconfig/waveai.json`
 
 Ships with three Wave AI modes:
+
 - `waveai@quick` - Fast responses (gpt-5-mini, low thinking)
 - `waveai@balanced` - Balanced (gpt-5.1, low thinking) [premium]
 - `waveai@deep` - Maximum capability (gpt-5.1, medium thinking) [premium]
@@ -107,6 +109,7 @@ Ships with three Wave AI modes:
 Currently shows placeholder: "Visual editor coming soon..."
 
 The component receives:
+
 - `model: WaveConfigViewModel` - Access to config file operations
 - Existing patterns from `SecretsContent` for list/detail views
 
@@ -164,12 +167,15 @@ WaveAIVisualContent
 ### Provider-Specific Form Fields
 
 #### 1. Wave Provider (`wave`)
+
 **Read-only/Auto-managed:**
+
 - Endpoint (shows default or env override)
 - Cloud flag (always true)
 - Secret: Not applicable (managed by Wave)
 
 **User-configurable:**
+
 - Model (required, text input with suggestions: gpt-5-mini, gpt-5.1)
 - API Type (required, dropdown: openai-responses, openai-chat)
 - Thinking Level (optional, dropdown: low, medium, high)
@@ -177,37 +183,46 @@ WaveAIVisualContent
 - Premium flag (checkbox)
 
 #### 2. OpenAI Provider (`openai`)
+
 **Auto-managed:**
+
 - Endpoint (shows: api.openai.com/v1)
 - API Type (auto-detected from model, editable)
 - Secret Name: Fixed as `OPENAI_KEY`
 
 **User-configurable:**
+
 - Model (required, text input with suggestions: gpt-4o, gpt-5-mini, gpt-5.1, o1-preview)
 - API Key (via secret modal - see Secret Management below)
 - Thinking Level (optional)
 - Capabilities (optional)
 
 #### 3. OpenRouter Provider (`openrouter`)
+
 **Auto-managed:**
+
 - Endpoint (shows: openrouter.ai/api/v1)
 - API Type (always openai-chat)
 - Secret Name: Fixed as `OPENROUTER_KEY`
 
 **User-configurable:**
+
 - Model (required, text input - OpenRouter model format)
 - API Key (via secret modal)
 - Thinking Level (optional)
 - Capabilities (optional)
 
 #### 4. Azure Provider (`azure`)
+
 **Auto-managed:**
+
 - API Version (always v1)
 - Endpoint (computed from resource name)
 - API Type (auto-detected from model)
 - Secret Name: Fixed as `AZURE_KEY`
 
 **User-configurable:**
+
 - Azure Resource Name (required, validated format)
 - Model (required)
 - API Key (via secret modal)
@@ -215,13 +230,16 @@ WaveAIVisualContent
 - Capabilities (optional)
 
 #### 5. Azure Legacy Provider (`azure-legacy`)
+
 **Auto-managed:**
+
 - API Version (default: 2025-04-01-preview, editable)
 - API Type (always openai-chat)
 - Endpoint (computed from resource + deployment + version)
 - Secret Name: Fixed as `AZURE_KEY`
 
 **User-configurable:**
+
 - Azure Resource Name (required, validated)
 - Azure Deployment (required)
 - Model (required)
@@ -230,10 +248,13 @@ WaveAIVisualContent
 - Capabilities (optional)
 
 #### 6. Google Provider (`google`)
+
 **Auto-managed:**
+
 - Secret Name: Fixed as `GOOGLE_KEY`
 
 **User-configurable:**
+
 - Model (required)
 - API Type (required dropdown)
 - Endpoint (required)
@@ -243,7 +264,9 @@ WaveAIVisualContent
 - Capabilities (optional)
 
 #### 7. Custom Provider (`custom`)
+
 **User must specify everything:**
+
 - Model (required)
 - API Type (required dropdown)
 - Endpoint (required)
@@ -266,6 +289,7 @@ Load JSON → Parse → Render Visual Editor
 ```
 
 **Simplified Operations:**
+
 1. **Load:** Parse `fileContentAtom` JSON string into mode objects for display
 2. **Edit Mode:** Update parsed object → stringify → set `fileContentAtom` → marks as edited
 3. **Add Mode:**
@@ -275,42 +299,45 @@ Load JSON → Parse → Render Visual Editor
 5. **Save:** Existing `model.saveFile()` handles validation and write
 
 **Mode Key Generation:**
+
 ```typescript
 function generateModeKey(provider: string, model: string): string {
-    // Try semantic key first: provider@model-sanitized
-    const sanitized = model.toLowerCase()
-        .replace(/[^a-z0-9]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-    const semanticKey = `${provider}@${sanitized}`;
-    
-    // Check for collision, if exists append random suffix
-    if (existingModes[semanticKey]) {
-        const randomId = crypto.randomUUID().slice(-6);
-        return `${provider}@${sanitized}-${randomId}`;
-    }
-    return semanticKey;
+  // Try semantic key first: provider@model-sanitized
+  const sanitized = model
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  const semanticKey = `${provider}@${sanitized}`;
+
+  // Check for collision, if exists append random suffix
+  if (existingModes[semanticKey]) {
+    const randomId = crypto.randomUUID().slice(-6);
+    return `${provider}@${sanitized}-${randomId}`;
+  }
+  return semanticKey;
 }
 // Examples: openai@gpt-4o, openrouter@claude-3-5-sonnet, azure@custom-fb4a2c
 ```
 
 **Secret Naming Convention:**
+
 ```typescript
 // Fixed secret names per provider (except custom)
 const SECRET_NAMES = {
-    openai: "OPENAI_KEY",
-    openrouter: "OPENROUTER_KEY",
-    azure: "AZURE_KEY",
-    "azure-legacy": "AZURE_KEY",
-    google: "GOOGLE_KEY",
-    // custom provider: user specifies their own secret name
+  openai: "OPENAI_KEY",
+  openrouter: "OPENROUTER_KEY",
+  azure: "AZURE_KEY",
+  "azure-legacy": "AZURE_KEY",
+  google: "GOOGLE_KEY",
+  // custom provider: user specifies their own secret name
 } as const;
 
 function getSecretName(provider: string, customSecretName?: string): string {
-    if (provider === "custom") {
-        return customSecretName || "CUSTOM_API_KEY";
-    }
-    return SECRET_NAMES[provider];
+  if (provider === "custom") {
+    return customSecretName || "CUSTOM_API_KEY";
+  }
+  return SECRET_NAMES[provider];
 }
 ```
 
@@ -318,11 +345,13 @@ function getSecretName(provider: string, customSecretName?: string): string {
 
 **Secret Status Indicator:**
 Display next to API Key field for providers that need one:
+
 - ✅ Green check icon: Secret exists and is set
 - ⚠️ Warning icon (yellow/orange): Secret not set or empty
 - Click icon to open secret modal
 
 **Secret Modal:**
+
 ```
 ┌─────────────────────────────────────┐
 │  Set API Key for OpenAI             │
@@ -338,6 +367,7 @@ Display next to API Key field for providers that need one:
 ```
 
 **Modal Behavior:**
+
 1. **Open Modal:** Click status icon or "Set API Key" button
 2. **Show Secret Name:**
    - Non-custom providers: Read-only, shows fixed name
@@ -353,6 +383,7 @@ Display next to API Key field for providers that need one:
 5. **Cancel:** Close without changes
 
 **Integration with Mode Editor:**
+
 - Check secret existence on mode load/select
 - Update icon based on RPC `GetSecretsCommand` result
 - "Save" button for mode only saves JSON config
@@ -361,6 +392,7 @@ Display next to API Key field for providers that need one:
 ### Key Features
 
 #### 1. Mode List
+
 - Display modes sorted by `display:order` (ascending)
 - Show icon, name, short description
 - Badge showing provider type
@@ -368,14 +400,16 @@ Display next to API Key field for providers that need one:
 - Click to edit
 
 #### 2. Add New Mode Flow
+
 1. Click "Add New Mode"
-2. Enter mode key (validated: alphanumeric, @, -, ., _)
+2. Enter mode key (validated: alphanumeric, @, -, ., \_)
 3. Select provider from dropdown
 4. Form dynamically updates to show provider-specific fields
-5. Fill required fields (marked with *)
+5. Fill required fields (marked with \*)
 6. Save → validates → adds to config → refreshes list
 
 #### 3. Edit Mode Flow
+
 1. Click mode from list
 2. Load mode data into form
 3. Provider is fixed (show read-only or with warning about changing)
@@ -383,6 +417,7 @@ Display next to API Key field for providers that need one:
 5. Save → validates → updates config → refreshes list
 
 **Raw JSON Editor Option:**
+
 - "Edit Raw JSON" button in mode editor (available for all modes)
 - Opens modal with Monaco editor showing just this mode's JSON
 - Validates JSON structure before allowing save
@@ -397,12 +432,14 @@ Display next to API Key field for providers that need one:
   - Custom error messages for each validation failure
 
 #### 4. Delete Mode Flow
+
 1. Click mode from list
 2. Delete button in editor
 3. Confirm dialog
 4. Remove from config → save → refresh list
 
 #### 5. Secret Integration
+
 - For API Token fields, provide two options:
   - Direct input (text field, masked)
   - Secret reference (dropdown of existing secrets + link to secrets page)
@@ -410,6 +447,7 @@ Display next to API Key field for providers that need one:
 - When direct token, store in `ai:apitoken`
 
 #### 6. Validation
+
 - **Mode Key:** Must match pattern `^[a-zA-Z0-9_@.-]+$`
 - **Required Fields:** `display:name`, `ai:apitype`, `ai:model`
 - **Azure Resource Name:** Must match `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$` (1-63 chars)
@@ -419,7 +457,9 @@ Display next to API Key field for providers that need one:
 - **Capabilities:** Must be from valid enum (pdfs, images, tools)
 
 #### 7. Smart Defaults
+
 When provider changes or model changes:
+
 - Show info about what will be auto-configured
 - Display computed endpoint (read-only with info icon)
 - Display auto-detected API type (editable with warning)
@@ -428,6 +468,7 @@ When provider changes or model changes:
 ### UI Components Needed
 
 #### New Components
+
 ```typescript
 // Main container
 WaveAIVisualContent
@@ -474,28 +515,28 @@ DragHandle (for reordering modes in list)
 ```
 
 **Drag & Drop for Reordering:**
+
 ```typescript
 // Reordering updates display:order automatically
 function handleModeReorder(draggedKey: string, targetKey: string) {
-    const modes = parseAIModes(fileContent);
-    const modesList = Object.entries(modes)
-        .sort((a, b) => (a[1]["display:order"] || 0) - (b[1]["display:order"] || 0));
-    
-    // Find indices
-    const draggedIndex = modesList.findIndex(([k]) => k === draggedKey);
-    const targetIndex = modesList.findIndex(([k]) => k === targetKey);
-    
-    // Recalculate display:order for all modes
-    const newOrder = [...modesList];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(targetIndex, 0, modesList[draggedIndex]);
-    
-    // Assign new order values (0, 10, 20, 30...)
-    newOrder.forEach(([key, mode], index) => {
-        modes[key] = { ...mode, "display:order": index * 10 };
-    });
-    
-    updateFileContent(JSON.stringify(modes, null, 2));
+  const modes = parseAIModes(fileContent);
+  const modesList = Object.entries(modes).sort((a, b) => (a[1]["display:order"] || 0) - (b[1]["display:order"] || 0));
+
+  // Find indices
+  const draggedIndex = modesList.findIndex(([k]) => k === draggedKey);
+  const targetIndex = modesList.findIndex(([k]) => k === targetKey);
+
+  // Recalculate display:order for all modes
+  const newOrder = [...modesList];
+  newOrder.splice(draggedIndex, 1);
+  newOrder.splice(targetIndex, 0, modesList[draggedIndex]);
+
+  // Assign new order values (0, 10, 20, 30...)
+  newOrder.forEach(([key, mode], index) => {
+    modes[key] = { ...mode, "display:order": index * 10 };
+  });
+
+  updateFileContent(JSON.stringify(modes, null, 2));
 }
 ```
 
@@ -511,22 +552,22 @@ function handleModeReorder(draggedKey: string, targetKey: string) {
 
 // Visual editor parses fileContentAtom on render:
 function parseAIModes(jsonString: string): Record<string, AIModeConfigType> | null {
-    try {
-        return JSON.parse(jsonString);
-    } catch {
-        return null; // Show "invalid JSON" error
-    }
+  try {
+    return JSON.parse(jsonString);
+  } catch {
+    return null; // Show "invalid JSON" error
+  }
 }
 
 // Updates modify fileContentAtom:
 function updateMode(key: string, mode: AIModeConfigType) {
-    const modes = parseAIModes(globalStore.get(model.fileContentAtom));
-    if (!modes) return;
-    
-    modes[key] = mode;
-    const newJson = JSON.stringify(modes, null, 2);
-    globalStore.set(model.fileContentAtom, newJson);
-    globalStore.set(model.hasEditedAtom, true);
+  const modes = parseAIModes(globalStore.get(model.fileContentAtom));
+  if (!modes) return;
+
+  modes[key] = mode;
+  const newJson = JSON.stringify(modes, null, 2);
+  globalStore.set(model.fileContentAtom, newJson);
+  globalStore.set(model.hasEditedAtom, true);
 }
 
 // Secrets use existing model methods:
@@ -536,6 +577,7 @@ function updateMode(key: string, mode: AIModeConfigType) {
 ```
 
 **Component State (useState):**
+
 ```typescript
 // In WaveAIVisualContent component:
 const [selectedModeKey, setSelectedModeKey] = useState<string | null>(null);
@@ -547,6 +589,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 ### Implementation Phases
 
 #### Phase 1: Foundation & List View
+
 - Parse `fileContentAtom` JSON into modes on render
 - Display mode list (left panel, ~300px)
   - Built-in modes with 🔒 icon at top
@@ -556,12 +599,14 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Handle invalid JSON → show error, switch to JSON tab
 
 #### Phase 2: Built-in Mode Viewer
+
 - Click built-in mode → show read-only details
 - Display all fields (display, provider, config)
 - "Built-in Mode" badge/banner
 - No edit/delete buttons
 
 #### Phase 3: Custom Mode Editor (Basic)
+
 - Click custom mode → load into editor form
 - Display fields (name, icon, order, description)
 - Provider field (read-only, badge)
@@ -570,6 +615,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Cancel → revert to previous selection
 
 #### Phase 4: Provider-Specific Fields
+
 - Dynamic form based on provider type
 - OpenAI: model, thinking level, capabilities
 - Azure: resource name, model, thinking, capabilities
@@ -580,6 +626,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Info tooltips for auto-configured fields
 
 #### Phase 5: Secret Integration
+
 - Check secret existence on mode select
 - Display status icon (✅ / ⚠️)
 - Click icon → open secret modal
@@ -588,6 +635,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Update status icon after save
 
 #### Phase 6: Add New Mode
+
 - "Add New Mode" button
 - Provider dropdown selector
 - Auto-generate mode key from provider + model
@@ -596,11 +644,13 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Select newly created mode
 
 #### Phase 7: Delete Mode
+
 - Delete button for custom modes only
 - Simple confirmation dialog
 - Remove from modes → update JSON → deselect
 
 #### Phase 8: Raw JSON Editor
+
 - "Edit Raw JSON" button in mode editor (all modes)
 - Modal with Monaco editor for single mode
 - JSON validation before save:
@@ -612,6 +662,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Useful for edge cases (modes without provider) and power users
 
 #### Phase 9: Drag & Drop Reordering
+
 - Add drag handle icon to custom mode list items
 - Implement drag & drop functionality:
   - Visual feedback during drag (opacity, cursor)
@@ -624,6 +675,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
   - Built-in modes always stay at top (negative order values)
 
 #### Phase 10: Polish & UX Refinements
+
 - Field validation with inline error messages
 - Empty state when no mode selected
 - Icon picker dropdown (Font Awesome icons)
@@ -635,6 +687,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Smooth transitions and animations
 
 #### Phase 8: Raw JSON Editor
+
 - "Edit Raw JSON" button in mode editor
 - Modal with Monaco editor for single mode
 - JSON validation before save:
@@ -645,6 +698,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
 - Parse and update mode in main JSON
 
 #### Phase 9: Drag & Drop Reordering
+
 - Make mode list items draggable (custom modes only)
 - Visual feedback during drag (drag handle icon)
 - Drop target highlighting
@@ -655,6 +709,7 @@ const [secretModalProvider, setSecretModalProvider] = useState<string>("");
   - Preserve built-in modes at top
 
 #### Phase 10: Polish & UX Refinements
+
 - Field validation (required, format)
 - Error messages inline
 - Empty state when no mode selected

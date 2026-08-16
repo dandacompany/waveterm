@@ -39,7 +39,7 @@ wsh edit [path]
 wsh edit -m [path]           # opens in magnified block
 ```
 
-This will open up a codeedit block for the specified file. This is useful for quickly editing files on a local or remote machine in Wave's graphical editor. This command returns immediately after opening the block. 
+This will open up a codeedit block for the specified file. This is useful for quickly editing files on a local or remote machine in Wave's graphical editor. This command returns immediately after opening the block.
 
 For `$EDITOR` integration (e.g. with `git commit`), see [`wsh editor`](#editor) which blocks until the editor is closed.
 
@@ -161,12 +161,14 @@ wsh ai architecture.png api-spec.pdf server.go -m "review the system design"
 ```
 
 **File Size Limits:**
+
 - Text files: 200KB maximum
 - PDF files: 5MB maximum
 - Image files: 7MB maximum (accounts for base64 encoding overhead)
 - Maximum 15 files per command
 
 **Flags:**
+
 - `-m, --message <text>` - Add message text along with files
 - `-s, --submit` - Auto-submit immediately (default waits for user)
 - `-n, --new` - Clear current chat and start fresh conversation
@@ -987,6 +989,7 @@ wsh blocks list [flags]
 List all blocks with optional filtering by workspace, window, tab, or view type. Output can be formatted as a table (default) or JSON for scripting.
 
 Flags:
+
 - `--workspace <id>` - restrict to specific workspace id
 - `--window <id>` - restrict to specific window id
 - `--tab <id>` - restrict to specific tab id
@@ -1009,7 +1012,6 @@ wsh blocks list --workspace=12d0c067-378e-454c-872e-77a314248114
 # Output as JSON for scripting
 wsh blocks list --json
 ```
-
 
 ---
 
@@ -1120,4 +1122,5 @@ The secrets UI provides a convenient visual way to browse, add, edit, and delete
 :::tip
 Use secrets in your scripts to avoid hardcoding sensitive values. Secrets work across remote machines - store an API key locally with `wsh secret set`, then access it from any SSH or WSL connection with `wsh secret get`. The secret is securely retrieved from your local machine without needing to duplicate it on remote systems.
 :::
+
 </PlatformProvider>

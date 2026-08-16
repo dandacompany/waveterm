@@ -13,8 +13,8 @@ import clsx from "clsx";
 import { useAtomValue } from "jotai";
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { makeORef } from "../store/wos";
-import { TabBadges } from "./tabbadges";
 import "./tab.scss";
+import { TabBadges } from "./tabbadges";
 import { buildTabContextMenu } from "./tabcontextmenu";
 
 export type TabEnv = WaveEnvSubset<{

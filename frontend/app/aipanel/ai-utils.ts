@@ -532,7 +532,6 @@ export const createImagePreview = async (file: File): Promise<string | null> => 
     });
 };
 
-
 /**
  * Filter and organize AI mode configs into Wave and custom provider groups
  * Returns organized configs that should be displayed based on settings and premium status

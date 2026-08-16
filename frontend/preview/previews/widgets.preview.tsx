@@ -79,12 +79,7 @@ const mockWidgets: { [key: string]: WidgetConfigType } = {
 
 const fullConfigAtom = atom<FullConfigType>({ settings: {}, widgets: mockWidgets } as unknown as FullConfigType);
 
-function makeWidgetsEnv(
-    baseEnv: WaveEnv,
-    isDev: boolean,
-    apps?: AppInfo[],
-    atomOverrides?: Partial<GlobalAtomsType>
-) {
+function makeWidgetsEnv(baseEnv: WaveEnv, isDev: boolean, apps?: AppInfo[], atomOverrides?: Partial<GlobalAtomsType>) {
     return applyMockEnvOverrides(baseEnv, {
         isDev,
         rpc: { ListAllAppsCommand: () => Promise.resolve(apps ?? []) },

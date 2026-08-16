@@ -10,7 +10,12 @@ const PreviewNodeId = "preview-web-node";
 
 export function WebPreview() {
     const nodeModel = React.useMemo(
-        () => makeMockNodeModel({ nodeId: PreviewNodeId, blockId: WebBlockId, innerRect: { width: "1040px", height: "620px" } }),
+        () =>
+            makeMockNodeModel({
+                nodeId: PreviewNodeId,
+                blockId: WebBlockId,
+                innerRect: { width: "1040px", height: "620px" },
+            }),
         []
     );
 

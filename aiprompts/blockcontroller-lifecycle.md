@@ -7,6 +7,7 @@ Block controllers manage the execution lifecycle of terminal shells, commands, a
 ## Controller States
 
 Controllers have three primary states:
+
 - **`init`** - Controller exists but process is not running
 - **`running`** - Process is actively running
 - **`done`** - Process has exited
@@ -27,6 +28,7 @@ var (
 ```
 
 Controllers implement the [`Controller` interface](pkg/blockcontroller/blockcontroller.go:64):
+
 - `Start(ctx, blockMeta, rtOpts, force)` - Start the controller process
 - `Stop(graceful, newStatus)` - Stop the controller process
 - `GetRuntimeStatus()` - Get current runtime status
@@ -39,20 +41,22 @@ Location: [`frontend/app/view/term/term-model.ts`](frontend/app/view/term/term-m
 The [`TermViewModel`](frontend/app/view/term/term-model.ts:44) manages the frontend side of a terminal block:
 
 **Key Atoms:**
+
 - `shellProcFullStatus` - Holds the current controller status from backend
 - `shellProcStatus` - Derived atom for just the status string ("init", "running", "done")
 - `isRestarting` - UI state for restart animation
 
 **Event Subscription:**
 The constructor subscribes to controller status events (line 317-324):
+
 ```typescript
 this.shellProcStatusUnsubFn = waveEventSubscribe({
-    eventType: "controllerstatus",
-    scope: WOS.makeORef("block", blockId),
-    handler: (event) => {
-        let bcRTS: BlockControllerRuntimeStatus = event.data;
-        this.updateShellProcStatus(bcRTS);
-    },
+  eventType: "controllerstatus",
+  scope: WOS.makeORef("block", blockId),
+  handler: (event) => {
+    let bcRTS: BlockControllerRuntimeStatus = event.data;
+    this.updateShellProcStatus(bcRTS);
+  },
 });
 ```
 
@@ -85,7 +89,7 @@ The frontend calls this via [`RpcApi.ControllerResyncCommand`](frontend/app/view
 The [`ResyncController()`](pkg/blockcontroller/blockcontroller.go:120) function:
 
 ```go
-func ResyncController(ctx context.Context, tabId, blockId string, 
+func ResyncController(ctx context.Context, tabId, blockId string,
                       rtOpts *waveobj.RuntimeOpts, force bool) error
 ```
 
@@ -104,6 +108,7 @@ func ResyncController(ctx context.Context, tabId, blockId string,
 6. **Publish Status** - Controller publishes runtime status updates
 
 **Important:** Registering a new controller automatically stops any existing controller for that blockId (line 95-98):
+
 ```go
 if existingController != nil {
     existingController.Stop(false, Status_Done)
@@ -114,11 +119,13 @@ if existingController != nil {
 ### 3. Backend Publishes Status Updates
 
 Controllers publish their status via the event system when:
+
 - Process starts
 - Process state changes
 - Process exits
 
 The status includes:
+
 - `shellprocstatus` - "init", "running", or "done"
 - `shellprocconnname` - Connection name being used
 - `shellprocexitcode` - Exit code when done
@@ -127,14 +134,16 @@ The status includes:
 ### 4. Frontend Receives and Processes Updates
 
 **Status Update Handler** (line 321-323):
+
 ```typescript
 handler: (event) => {
-    let bcRTS: BlockControllerRuntimeStatus = event.data;
-    this.updateShellProcStatus(bcRTS);
-}
+  let bcRTS: BlockControllerRuntimeStatus = event.data;
+  this.updateShellProcStatus(bcRTS);
+};
 ```
 
 **Status Update Logic** (line 430-438):
+
 ```typescript
 updateShellProcStatus(fullStatus: BlockControllerRuntimeStatus) {
     if (fullStatus == null) return;
@@ -153,17 +162,18 @@ The version check ensures out-of-order events don't cause issues.
 The UI reacts to status changes through Jotai atoms:
 
 **Header Buttons** (line 263-306):
+
 - Show "Play" icon when status is "init"
 - Show "Refresh" icon when status is "running" or "done"
 - Display exit code/status icons for cmd controller
 
 **Restart Behavior** (line 631-635 in term.tsx via term-model.ts):
+
 ```typescript
 const shellProcStatus = globalStore.get(this.shellProcStatus);
-if ((shellProcStatus == "done" || shellProcStatus == "init") && 
-    keyutil.checkKeyPressed(waveEvent, "Enter")) {
-    this.forceRestartController();
-    return false;
+if ((shellProcStatus == "done" || shellProcStatus == "init") && keyutil.checkKeyPressed(waveEvent, "Enter")) {
+  this.forceRestartController();
+  return false;
 }
 ```
 
@@ -174,12 +184,13 @@ Pressing Enter when the process is done/init triggers a restart.
 **Frontend → Backend:**
 
 When user types in terminal, data flows through [`sendDataToController()`](frontend/app/view/term/term-model.ts:408):
+
 ```typescript
 sendDataToController(data: string) {
     const b64data = stringToBase64(data);
-    RpcApi.ControllerInputCommand(TabRpcClient, { 
-        blockid: this.blockId, 
-        inputdata64: b64data 
+    RpcApi.ControllerInputCommand(TabRpcClient, {
+        blockid: this.blockId,
+        inputdata64: b64data
     });
 }
 ```
@@ -187,6 +198,7 @@ sendDataToController(data: string) {
 This calls the backend [`SendInput()`](pkg/blockcontroller/blockcontroller.go:260) function which forwards to the controller's `SendInput()` method.
 
 The [`BlockInputUnion`](pkg/blockcontroller/blockcontroller.go:48) supports three types of input:
+
 - `inputdata` - Raw terminal input bytes
 - `signame` - Signal names (e.g., "SIGTERM", "SIGINT")
 - `termsize` - Terminal size changes (rows/cols)
@@ -196,6 +208,7 @@ The [`BlockInputUnion`](pkg/blockcontroller/blockcontroller.go:48) supports thre
 ### 1. Frontend-Driven Architecture
 
 The frontend has full control over controller lifecycle:
+
 - **Creates** controllers by calling ResyncController
 - **Restarts** controllers via forcerestart flag
 - **Monitors** status via event subscriptions
@@ -206,6 +219,7 @@ The backend is stateless and reactive - it doesn't make lifecycle decisions auto
 ### 2. Idempotent Resync
 
 `ResyncController()` is idempotent - calling it multiple times with the same state is safe:
+
 - If controller exists and is running with correct type/connection → no-op
 - If configuration changed → replaces controller
 - If force flag set → always restarts
@@ -215,6 +229,7 @@ This makes it safe to call on various triggers (connection change, focus, etc.).
 ### 3. Versioned Status Updates
 
 Status includes a monotonically increasing version number:
+
 - Frontend can process events out-of-order
 - Only applies updates with newer versions
 - Prevents race conditions from concurrent updates
@@ -222,6 +237,7 @@ Status includes a monotonically increasing version number:
 ### 4. Automatic Cleanup
 
 When a controller is replaced:
+
 - Old controller is automatically stopped
 - Runtime info is cleaned up
 - Registry entry is updated atomically
@@ -254,13 +270,13 @@ forceRestartController() {
 ```typescript
 // In term.tsx - TermResyncHandler component
 React.useEffect(() => {
-    const isConnected = connStatus?.status == "connected";
-    const wasConnected = lastConnStatus?.status == "connected";
-    if (isConnected == wasConnected && curConnName == lastConnName) {
-        return;  // No change
-    }
-    model.termRef.current?.resyncController("resync handler");
-    setLastConnStatus(connStatus);
+  const isConnected = connStatus?.status == "connected";
+  const wasConnected = lastConnStatus?.status == "connected";
+  if (isConnected == wasConnected && curConnName == lastConnName) {
+    return; // No change
+  }
+  model.termRef.current?.resyncController("resync handler");
+  setLastConnStatus(connStatus);
 }, [connStatus]);
 ```
 
@@ -272,9 +288,9 @@ const shellProcStatus = jotai.useAtomValue(model.shellProcStatus);
 
 // Use in UI
 if (shellProcStatus == "running") {
-    // Show running state
+  // Show running state
 } else if (shellProcStatus == "done") {
-    // Show restart button
+  // Show restart button
 }
 ```
 

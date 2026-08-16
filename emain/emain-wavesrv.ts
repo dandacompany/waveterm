@@ -107,9 +107,7 @@ export function runWaveSrv(handleWSEvent: (evtMsg: WSEventType) => void): Promis
     });
     rlStderr.on("line", (line) => {
         if (line.includes("WAVESRV-ESTART")) {
-            const startParams = /ws:([a-z0-9.:]+) web:([a-z0-9.:]+) version:([a-z0-9.-]+) buildtime:(\d+)/gm.exec(
-                line
-            );
+            const startParams = /ws:([a-z0-9.:]+) web:([a-z0-9.:]+) version:([a-z0-9.-]+) buildtime:(\d+)/gm.exec(line);
             if (startParams == null) {
                 console.log("error parsing WAVESRV-ESTART line", line);
                 setUserConfirmedQuit(true);

@@ -14,7 +14,10 @@ export function useRpcOverride<K extends keyof RpcOverrides>(command: K, handler
     }
 }
 
-export function useRpcStreamOverride<K extends keyof RpcStreamOverrides>(command: K, handler: RpcStreamHandlerType): void {
+export function useRpcStreamOverride<K extends keyof RpcStreamOverrides>(
+    command: K,
+    handler: RpcStreamHandlerType
+): void {
     const mockEnv = useWaveEnv() as MockWaveEnv;
     const registeredRef = React.useRef(false);
     if (!registeredRef.current) {

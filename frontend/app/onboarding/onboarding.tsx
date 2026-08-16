@@ -325,7 +325,12 @@ const NewInstallOnboardingModal = () => {
     let pageComp: React.JSX.Element = null;
     switch (pageName) {
         case "init":
-            pageComp = <InitPage isCompact={isCompact} telemetryUpdateFn={(value) => services.ClientService.TelemetryUpdate(value)} />;
+            pageComp = (
+                <InitPage
+                    isCompact={isCompact}
+                    telemetryUpdateFn={(value) => services.ClientService.TelemetryUpdate(value)}
+                />
+            );
             break;
         case "notelemetrystar":
             pageComp = <NoTelemetryStarPage isCompact={isCompact} />;

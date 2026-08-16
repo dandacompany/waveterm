@@ -4,7 +4,6 @@
 import { BuilderAppPanelModel } from "@/builder/store/builder-apppanel-model";
 import { CopyButton } from "@/element/copybutton";
 import { atoms } from "@/store/global";
-import { cn } from "@/util/util";
 import { useAtomValue } from "jotai";
 import { memo, useCallback, useEffect, useState } from "react";
 

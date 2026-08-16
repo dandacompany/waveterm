@@ -1,8 +1,8 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Tooltip } from "@/element/tooltip";
 import { WaveEnv, WaveEnvSubset, useWaveEnv } from "@/app/waveenv/waveenv";
+import { Tooltip } from "@/element/tooltip";
 import { useAtomValue } from "jotai";
 import { memo, useCallback } from "react";
 

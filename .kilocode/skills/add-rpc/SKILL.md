@@ -39,7 +39,7 @@ Add your command to the `WshRpcInterface` in `pkg/wshrpc/wshrpctypes.go`:
 ```go
 type WshRpcInterface interface {
     // ... existing commands ...
-    
+
     // Add your new command
     YourNewCommand(ctx context.Context, data CommandYourNewData) (*YourNewResponse, error)
 }
@@ -86,6 +86,7 @@ task generate
 ```
 
 This command will:
+
 - Generate TypeScript type definitions in `frontend/types/gotypes.d.ts`
 - Create RPC client bindings
 - Update routing code
@@ -106,10 +107,10 @@ func (ws *WshServer) YourNewCommand(ctx context.Context, data wshrpc.CommandYour
     if data.SomeId == "" {
         return nil, fmt.Errorf("someid is required")
     }
-    
+
     // Implement your logic
     result := doSomething(data)
-    
+
     // Return response
     return &wshrpc.YourNewResponse{
         ResultField: result,
@@ -119,6 +120,7 @@ func (ws *WshServer) YourNewCommand(ctx context.Context, data wshrpc.CommandYour
 ```
 
 **Use main server when:**
+
 - Accessing the database
 - Managing blocks, tabs, or workspaces
 - Coordinating between components
@@ -132,7 +134,7 @@ Implement in `emain/emain-wsh.ts`:
 async handle_yournew(rh: RpcResponseHelper, data: CommandYourNewData): Promise<YourNewResponse> {
     // Electron-specific logic
     const result = await electronAPI.doSomething(data);
-    
+
     return {
         resultfield: result,
         success: true,
@@ -141,6 +143,7 @@ async handle_yournew(rh: RpcResponseHelper, data: CommandYourNewData): Promise<Y
 ```
 
 **Use Electron when:**
+
 - Accessing native OS features
 - Managing application windows
 - Using Electron APIs (notifications, system tray, etc.)
@@ -154,10 +157,10 @@ Implement in `frontend/app/store/tabrpcclient.ts`:
 async handle_yournew(rh: RpcResponseHelper, data: CommandYourNewData): Promise<YourNewResponse> {
     // Access frontend state/models
     const layoutModel = getLayoutModelForStaticTab();
-    
+
     // Implement tab-specific logic
     const result = layoutModel.doSomething(data);
-    
+
     return {
         resultfield: result,
         success: true,
@@ -166,6 +169,7 @@ async handle_yournew(rh: RpcResponseHelper, data: CommandYourNewData): Promise<Y
 ```
 
 **Use tab client when:**
+
 - Accessing React state or Jotai atoms
 - Manipulating UI layout
 - Capturing screenshots
@@ -182,7 +186,7 @@ func (impl *ServerImpl) RemoteYourNewCommand(ctx context.Context, data wshrpc.Co
     if err != nil {
         return nil, fmt.Errorf("remote operation failed: %w", err)
     }
-    
+
     return &wshrpc.YourNewResponse{
         ResultField: result,
         Success:     true,
@@ -191,6 +195,7 @@ func (impl *ServerImpl) RemoteYourNewCommand(ctx context.Context, data wshrpc.Co
 ```
 
 **Use remote server when:**
+
 - Operating on remote filesystems
 - Executing commands on remote hosts
 - Managing remote processes
@@ -204,10 +209,10 @@ Implement in `frontend/app/view/term/term-wsh.tsx`:
 async handle_yournew(rh: RpcResponseHelper, data: CommandYourNewData): Promise<YourNewResponse> {
     // Access terminal-specific data
     const termWrap = this.model.termRef.current;
-    
+
     // Implement terminal logic
     const result = termWrap.doSomething(data);
-    
+
     return {
         resultfield: result,
         success: true,
@@ -216,6 +221,7 @@ async handle_yournew(rh: RpcResponseHelper, data: CommandYourNewData): Promise<Y
 ```
 
 **Use terminal client when:**
+
 - Accessing terminal buffer/scrollback
 - Managing VDOM contexts
 - Reading terminal-specific state
@@ -289,13 +295,13 @@ type WshRpcInterface interface {
 ```go
 func (ws *WshServer) StreamYourDataCommand(ctx context.Context, request wshrpc.YourDataRequest) chan wshrpc.RespOrErrorUnion[wshrpc.YourDataType] {
     rtn := make(chan wshrpc.RespOrErrorUnion[wshrpc.YourDataType])
-    
+
     go func() {
         defer close(rtn)
         defer func() {
             panichandler.PanicHandler("StreamYourDataCommand", recover())
         }()
-        
+
         // Stream data
         for i := 0; i < 10; i++ {
             select {
@@ -311,7 +317,7 @@ func (ws *WshServer) StreamYourDataCommand(ctx context.Context, request wshrpc.Y
             }
         }
     }()
-    
+
     return rtn
 }
 ```
@@ -323,11 +329,13 @@ func (ws *WshServer) StreamYourDataCommand(ctx context.Context, request wshrpc.Y
 2. **Descriptive Names**: Use clear, action-oriented command names (e.g., `GetFullConfigCommand`, not `ConfigCommand`)
 
 3. **Error Handling**: Return descriptive errors with context:
+
    ```go
    return nil, fmt.Errorf("error creating block: %w", err)
    ```
 
 4. **Context Awareness**: Respect context cancellation for long-running operations:
+
    ```go
    select {
    case <-ctx.Done():
@@ -368,17 +376,17 @@ func (ws *WshServer) GetSomethingCommand(ctx context.Context, id string) (*Somet
 ```go
 func (ws *WshServer) UpdateSomethingCommand(ctx context.Context, data wshrpc.CommandUpdateData) error {
     ctx = waveobj.ContextWithUpdates(ctx)
-    
+
     // Make changes
     err := wstore.UpdateObject(ctx, data.ORef, data.Updates)
     if err != nil {
         return fmt.Errorf("error updating: %w", err)
     }
-    
+
     // Broadcast updates
     updates := waveobj.ContextGetUpdatesRtn(ctx)
     wps.Broker.SendUpdateEvents(updates)
-    
+
     return nil
 }
 ```
@@ -392,7 +400,7 @@ func (ws *WshServer) DoActionCommand(ctx context.Context, data wshrpc.CommandAct
     if err != nil {
         return err
     }
-    
+
     // Publish event about the action
     go func() {
         wps.Broker.Publish(wps.WaveEvent{
@@ -400,7 +408,7 @@ func (ws *WshServer) DoActionCommand(ctx context.Context, data wshrpc.CommandAct
             Data:  result,
         })
     }()
-    
+
     return nil
 }
 ```

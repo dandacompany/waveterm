@@ -148,13 +148,17 @@ Open a configuration file (e.g., `widgets.json`) in preview mode:
 ## Common Use Cases
 
 ### File/Folder Operations
+
 Context menus are commonly used for file operations like creating, renaming, and deleting files or folders.
 
 ### Settings Toggles
+
 Use checkbox menu items to toggle settings on and off, with the `checked` property reflecting the current state.
 
 ### Nested Options
+
 Use `submenu` to organize related options hierarchically, keeping the top-level menu clean and organized.
 
 ### Conditional Items
+
 Use the `visible` and `enabled` properties to dynamically show or disable menu items based on the current state.

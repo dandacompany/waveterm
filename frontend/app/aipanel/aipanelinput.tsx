@@ -183,7 +183,11 @@ export const AIPanelInput = memo(({ onSubmit, status, model }: AIPanelInputProps
                             </button>
                         </Tooltip>
                     ) : (
-                        <Tooltip content="Send message (Enter)" placement="top" divClassName="absolute bottom-1.5 right-1">
+                        <Tooltip
+                            content="Send message (Enter)"
+                            placement="top"
+                            divClassName="absolute bottom-1.5 right-1"
+                        >
                             <button
                                 type="submit"
                                 disabled={status !== "ready" || !input.trim()}

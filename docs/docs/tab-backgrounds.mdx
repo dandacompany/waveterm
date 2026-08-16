@@ -13,11 +13,13 @@ Wave's background system harnesses the full power of CSS backgrounds, letting yo
 Custom backgrounds are stored in `~/.config/waveterm/backgrounds.json`.
 
 **To edit using the UI:**
+
 1. Click the settings (gear) icon in the widget bar
 2. Select "Settings" from the menu
 3. Choose "Tab Backgrounds" from the settings sidebar
 
 **Or launch from the command line:**
+
 ```bash
 wsh editconfig backgrounds.json
 ```
@@ -41,15 +43,15 @@ To see how Wave's built-in backgrounds are defined, check out the [default backg
 
 ## Configuration Keys
 
-| Key Name             | Type   | Function                                                                                                |
-| -------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
-| display:name         | string | Name shown in the UI menu (required)                                                                    |
-| display:order        | float  | Controls the order in the menu (optional)                                                               |
-| bg                   | string | CSS `background` attribute for the tab (supports colors, gradients, images, etc.)                       |
-| bg:opacity           | float  | The opacity of the background (defaults to 0.5)                                                         |
-| bg:blendmode         | string | The [blend mode](https://developer.mozilla.org/en-US/docs/Web/CSS/blend-mode) of the background         |
-| bg:bordercolor       | string | The color of the border when a block is not active (rarely used)                                        |
-| bg:activebordercolor | string | The color of the border when a block is active                                                          |
+| Key Name             | Type   | Function                                                                                        |
+| -------------------- | ------ | ----------------------------------------------------------------------------------------------- |
+| display:name         | string | Name shown in the UI menu (required)                                                            |
+| display:order        | float  | Controls the order in the menu (optional)                                                       |
+| bg                   | string | CSS `background` attribute for the tab (supports colors, gradients, images, etc.)               |
+| bg:opacity           | float  | The opacity of the background (defaults to 0.5)                                                 |
+| bg:blendmode         | string | The [blend mode](https://developer.mozilla.org/en-US/docs/Web/CSS/blend-mode) of the background |
+| bg:bordercolor       | string | The color of the border when a block is not active (rarely used)                                |
+| bg:activebordercolor | string | The color of the border when a block is active                                                  |
 
 ## Examples
 

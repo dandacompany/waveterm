@@ -27,10 +27,10 @@ import {
     setWasInFg,
 } from "./emain-activity";
 import { initIpcHandlers } from "./emain-ipc";
-import { bufferOrOpen, flushBufferedOpens, openExternalPaths, setNativeOpenEnabled } from "./emain-open-external";
-import { parseArgvForOpenItems, parseWaveUrl } from "./emain-open-external-parse";
 import { log } from "./emain-log";
 import { initMenuEventSubscriptions, makeAndSetAppMenu, makeDockTaskbar } from "./emain-menu";
+import { bufferOrOpen, flushBufferedOpens, openExternalPaths, setNativeOpenEnabled } from "./emain-open-external";
+import { parseArgvForOpenItems, parseWaveUrl } from "./emain-open-external-parse";
 import {
     checkIfRunningUnderARM64Translation,
     getElectronAppBasePath,

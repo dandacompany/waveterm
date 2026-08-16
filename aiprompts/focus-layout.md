@@ -5,6 +5,7 @@ This document explains how focus state changes in the layout system propagate th
 ## Overview
 
 When layout operations modify focus state, a straightforward chain of updates occurs:
+
 1. **Visual feedback** - The focus ring updates immediately
 2. **Physical DOM focus** - The terminal (or other view) receives actual browser focus
 
@@ -19,11 +20,11 @@ Throughout [`layoutTree.ts`](../frontend/layout/lib/layoutTree.ts), operations d
 ```typescript
 // Example from insertNode
 if (action.magnified) {
-    layoutState.magnifiedNodeId = action.node.id;
-    layoutState.focusedNodeId = action.node.id;
+  layoutState.magnifiedNodeId = action.node.id;
+  layoutState.focusedNodeId = action.node.id;
 }
 if (action.focused) {
-    layoutState.focusedNodeId = action.node.id;
+  layoutState.focusedNodeId = action.node.id;
 }
 ```
 
@@ -37,7 +38,7 @@ The [`LayoutModel.treeReducer()`](../frontend/layout/lib/layoutModel.ts:547) com
 treeReducer(action: LayoutTreeAction, setState = true): boolean {
     // Mutate tree state
     focusNode(this.treeState, action);
-    
+
     if (setState) {
         this.updateTree();  // Compute leafOrder, etc.
         this.setter(this.localTreeStateAtom, { ...this.treeState });  // Sync update
@@ -54,11 +55,11 @@ Each block's `NodeModel` has an `isFocused` atom:
 
 ```typescript
 isFocused: atom((get) => {
-    const treeState = get(this.localTreeStateAtom);
-    const isFocused = treeState.focusedNodeId === nodeid;
-    const waveAIFocused = get(atoms.waveAIFocusedAtom);
-    return isFocused && !waveAIFocused;
-})
+  const treeState = get(this.localTreeStateAtom);
+  const isFocused = treeState.focusedNodeId === nodeid;
+  const waveAIFocused = get(atoms.waveAIFocusedAtom);
+  return isFocused && !waveAIFocused;
+});
 ```
 
 When `localTreeStateAtom` updates, all `isFocused` atoms recalculate. Only the matching node returns `true`.
@@ -78,17 +79,17 @@ CSS classes update immediately, showing the focus ring.
 ```typescript
 // Step 1: isFocused → blockClicked
 useLayoutEffect(() => {
-    setBlockClicked(isFocused);
+  setBlockClicked(isFocused);
 }, [isFocused]);
 
 // Step 2: blockClicked → physical focus
 useLayoutEffect(() => {
-    if (!blockClicked) return;
-    setBlockClicked(false);
-    const focusWithin = focusedBlockId() == nodeModel.blockId;
-    if (!focusWithin) {
-        setFocusTarget();  // Calls viewModel.giveFocus()
-    }
+  if (!blockClicked) return;
+  setBlockClicked(false);
+  const focusWithin = focusedBlockId() == nodeModel.blockId;
+  if (!focusWithin) {
+    setFocusTarget(); // Calls viewModel.giveFocus()
+  }
 }, [blockClicked, isFocused]);
 ```
 
@@ -167,7 +168,7 @@ On initialization or backend updates, queued actions are processed:
 
 ```typescript
 if (initialState.pendingBackendActions?.length) {
-    fireAndForget(() => this.processPendingBackendActions());
+  fireAndForget(() => this.processPendingBackendActions());
 }
 ```
 

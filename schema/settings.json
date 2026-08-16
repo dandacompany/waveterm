@@ -1,360 +1,350 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/wavetermdev/waveterm/pkg/wconfig/settings-type",
-  "$ref": "#/$defs/SettingsType",
-  "$defs": {
-    "SettingsType": {
-      "properties": {
-        "app:*": {
-          "type": "boolean"
-        },
-        "app:globalhotkey": {
-          "type": "string"
-        },
-        "app:dismissarchitecturewarning": {
-          "type": "boolean"
-        },
-        "app:defaultnewblock": {
-          "type": "string"
-        },
-        "app:showoverlayblocknums": {
-          "type": "boolean"
-        },
-        "app:ctrlvpaste": {
-          "type": "boolean"
-        },
-        "app:confirmquit": {
-          "type": "boolean"
-        },
-        "app:hideaibutton": {
-          "type": "boolean"
-        },
-        "app:disablectrlshiftarrows": {
-          "type": "boolean"
-        },
-        "app:disablectrlshiftdisplay": {
-          "type": "boolean"
-        },
-        "app:focusfollowscursor": {
-          "type": "string",
-          "enum": [
-            "off",
-            "on",
-            "term"
-          ]
-        },
-        "app:tabbar": {
-          "type": "string",
-          "enum": [
-            "top",
-            "left"
-          ]
-        },
-        "feature:waveappbuilder": {
-          "type": "boolean"
-        },
-        "ai:*": {
-          "type": "boolean"
-        },
-        "ai:preset": {
-          "type": "string"
-        },
-        "ai:apitype": {
-          "type": "string"
-        },
-        "ai:baseurl": {
-          "type": "string"
-        },
-        "ai:apitoken": {
-          "type": "string"
-        },
-        "ai:name": {
-          "type": "string"
-        },
-        "ai:model": {
-          "type": "string"
-        },
-        "ai:orgid": {
-          "type": "string"
-        },
-        "ai:apiversion": {
-          "type": "string"
-        },
-        "ai:maxtokens": {
-          "type": "number"
-        },
-        "ai:timeoutms": {
-          "type": "number"
-        },
-        "ai:proxyurl": {
-          "type": "string"
-        },
-        "ai:fontsize": {
-          "type": "number"
-        },
-        "ai:fixedfontsize": {
-          "type": "number"
-        },
-        "waveai:showcloudmodes": {
-          "type": "boolean"
-        },
-        "waveai:defaultmode": {
-          "type": "string"
-        },
-        "term:*": {
-          "type": "boolean"
-        },
-        "term:fontsize": {
-          "type": "number"
-        },
-        "term:fontfamily": {
-          "type": "string"
-        },
-        "term:theme": {
-          "type": "string"
-        },
-        "term:disablewebgl": {
-          "type": "boolean"
-        },
-        "term:localshellpath": {
-          "type": "string"
-        },
-        "term:localshellopts": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "term:gitbashpath": {
-          "type": "string"
-        },
-        "term:scrollback": {
-          "type": "integer"
-        },
-        "term:copyonselect": {
-          "type": "boolean"
-        },
-        "term:transparency": {
-          "type": "number"
-        },
-        "term:allowbracketedpaste": {
-          "type": "boolean"
-        },
-        "term:shiftenternewline": {
-          "type": "boolean"
-        },
-        "term:macoptionismeta": {
-          "type": "boolean"
-        },
-        "term:cursor": {
-          "type": "string"
-        },
-        "term:cursorblink": {
-          "type": "boolean"
-        },
-        "term:bellsound": {
-          "type": "boolean"
-        },
-        "term:bellindicator": {
-          "type": "boolean"
-        },
-        "term:osc52": {
-          "type": "string",
-          "enum": [
-            "focus",
-            "always"
-          ]
-        },
-        "term:durable": {
-          "type": "boolean"
-        },
-        "term:showsplitbuttons": {
-          "type": "boolean"
-        },
-        "term:trimtrailingwhitespace": {
-          "type": "boolean"
-        },
-        "editor:minimapenabled": {
-          "type": "boolean"
-        },
-        "editor:stickyscrollenabled": {
-          "type": "boolean"
-        },
-        "editor:wordwrap": {
-          "type": "boolean"
-        },
-        "editor:fontsize": {
-          "type": "number"
-        },
-        "editor:inlinediff": {
-          "type": "boolean"
-        },
-        "web:*": {
-          "type": "boolean"
-        },
-        "web:openlinksinternally": {
-          "type": "boolean"
-        },
-        "web:defaulturl": {
-          "type": "string"
-        },
-        "web:defaultsearch": {
-          "type": "string"
-        },
-        "autoupdate:*": {
-          "type": "boolean"
-        },
-        "autoupdate:enabled": {
-          "type": "boolean"
-        },
-        "autoupdate:intervalms": {
-          "type": "number"
-        },
-        "autoupdate:installonquit": {
-          "type": "boolean"
-        },
-        "autoupdate:channel": {
-          "type": "string"
-        },
-        "markdown:fontsize": {
-          "type": "number"
-        },
-        "markdown:fixedfontsize": {
-          "type": "number"
-        },
-        "preview:showhiddenfiles": {
-          "type": "boolean"
-        },
-        "preview:defaultsort": {
-          "type": "string",
-          "enum": [
-            "name",
-            "modtime"
-          ]
-        },
-        "tab:preset": {
-          "type": "string"
-        },
-        "tab:confirmclose": {
-          "type": "boolean"
-        },
-        "tab:background": {
-          "type": "string"
-        },
-        "widget:*": {
-          "type": "boolean"
-        },
-        "widget:showhelp": {
-          "type": "boolean"
-        },
-        "window:*": {
-          "type": "boolean"
-        },
-        "window:fullscreenonlaunch": {
-          "type": "boolean"
-        },
-        "window:transparent": {
-          "type": "boolean"
-        },
-        "window:blur": {
-          "type": "boolean"
-        },
-        "window:opacity": {
-          "type": "number"
-        },
-        "window:bgcolor": {
-          "type": "string"
-        },
-        "window:reducedmotion": {
-          "type": "boolean"
-        },
-        "window:tilegapsize": {
-          "type": "integer"
-        },
-        "window:showmenubar": {
-          "type": "boolean"
-        },
-        "window:nativetitlebar": {
-          "type": "boolean"
-        },
-        "window:disablehardwareacceleration": {
-          "type": "boolean"
-        },
-        "window:maxtabcachesize": {
-          "type": "integer"
-        },
-        "window:magnifiedblockopacity": {
-          "type": "number"
-        },
-        "window:magnifiedblocksize": {
-          "type": "number"
-        },
-        "window:magnifiedblockblurprimarypx": {
-          "type": "integer"
-        },
-        "window:magnifiedblockblursecondarypx": {
-          "type": "integer"
-        },
-        "window:confirmclose": {
-          "type": "boolean"
-        },
-        "window:savelastwindow": {
-          "type": "boolean"
-        },
-        "window:dimensions": {
-          "type": "string"
-        },
-        "window:zoom": {
-          "type": "number"
-        },
-        "telemetry:*": {
-          "type": "boolean"
-        },
-        "telemetry:enabled": {
-          "type": "boolean"
-        },
-        "conn:*": {
-          "type": "boolean"
-        },
-        "conn:askbeforewshinstall": {
-          "type": "boolean"
-        },
-        "conn:wshenabled": {
-          "type": "boolean"
-        },
-        "conn:localhostdisplayname": {
-          "type": "string"
-        },
-        "debug:*": {
-          "type": "boolean"
-        },
-        "debug:pprofport": {
-          "type": "integer"
-        },
-        "debug:pprofmemprofilerate": {
-          "type": "integer"
-        },
-        "debug:webglstatus": {
-          "type": "boolean"
-        },
-        "tsunami:*": {
-          "type": "boolean"
-        },
-        "tsunami:scaffoldpath": {
-          "type": "string"
-        },
-        "tsunami:sdkreplacepath": {
-          "type": "string"
-        },
-        "tsunami:sdkversion": {
-          "type": "string"
-        },
-        "tsunami:gopath": {
-          "type": "string"
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/wavetermdev/waveterm/pkg/wconfig/settings-type",
+    "$ref": "#/$defs/SettingsType",
+    "$defs": {
+        "SettingsType": {
+            "properties": {
+                "app:*": {
+                    "type": "boolean"
+                },
+                "app:globalhotkey": {
+                    "type": "string"
+                },
+                "app:dismissarchitecturewarning": {
+                    "type": "boolean"
+                },
+                "app:defaultnewblock": {
+                    "type": "string"
+                },
+                "app:showoverlayblocknums": {
+                    "type": "boolean"
+                },
+                "app:ctrlvpaste": {
+                    "type": "boolean"
+                },
+                "app:confirmquit": {
+                    "type": "boolean"
+                },
+                "app:hideaibutton": {
+                    "type": "boolean"
+                },
+                "app:disablectrlshiftarrows": {
+                    "type": "boolean"
+                },
+                "app:disablectrlshiftdisplay": {
+                    "type": "boolean"
+                },
+                "app:focusfollowscursor": {
+                    "type": "string",
+                    "enum": ["off", "on", "term"]
+                },
+                "app:tabbar": {
+                    "type": "string",
+                    "enum": ["top", "left"]
+                },
+                "feature:waveappbuilder": {
+                    "type": "boolean"
+                },
+                "ai:*": {
+                    "type": "boolean"
+                },
+                "ai:preset": {
+                    "type": "string"
+                },
+                "ai:apitype": {
+                    "type": "string"
+                },
+                "ai:baseurl": {
+                    "type": "string"
+                },
+                "ai:apitoken": {
+                    "type": "string"
+                },
+                "ai:name": {
+                    "type": "string"
+                },
+                "ai:model": {
+                    "type": "string"
+                },
+                "ai:orgid": {
+                    "type": "string"
+                },
+                "ai:apiversion": {
+                    "type": "string"
+                },
+                "ai:maxtokens": {
+                    "type": "number"
+                },
+                "ai:timeoutms": {
+                    "type": "number"
+                },
+                "ai:proxyurl": {
+                    "type": "string"
+                },
+                "ai:fontsize": {
+                    "type": "number"
+                },
+                "ai:fixedfontsize": {
+                    "type": "number"
+                },
+                "waveai:showcloudmodes": {
+                    "type": "boolean"
+                },
+                "waveai:defaultmode": {
+                    "type": "string"
+                },
+                "term:*": {
+                    "type": "boolean"
+                },
+                "term:fontsize": {
+                    "type": "number"
+                },
+                "term:fontfamily": {
+                    "type": "string"
+                },
+                "term:theme": {
+                    "type": "string"
+                },
+                "term:disablewebgl": {
+                    "type": "boolean"
+                },
+                "term:localshellpath": {
+                    "type": "string"
+                },
+                "term:localshellopts": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "term:gitbashpath": {
+                    "type": "string"
+                },
+                "term:scrollback": {
+                    "type": "integer"
+                },
+                "term:copyonselect": {
+                    "type": "boolean"
+                },
+                "term:transparency": {
+                    "type": "number"
+                },
+                "term:allowbracketedpaste": {
+                    "type": "boolean"
+                },
+                "term:shiftenternewline": {
+                    "type": "boolean"
+                },
+                "term:macoptionismeta": {
+                    "type": "boolean"
+                },
+                "term:cursor": {
+                    "type": "string"
+                },
+                "term:cursorblink": {
+                    "type": "boolean"
+                },
+                "term:bellsound": {
+                    "type": "boolean"
+                },
+                "term:bellindicator": {
+                    "type": "boolean"
+                },
+                "term:osc52": {
+                    "type": "string",
+                    "enum": ["focus", "always"]
+                },
+                "term:durable": {
+                    "type": "boolean"
+                },
+                "term:showsplitbuttons": {
+                    "type": "boolean"
+                },
+                "term:trimtrailingwhitespace": {
+                    "type": "boolean"
+                },
+                "editor:minimapenabled": {
+                    "type": "boolean"
+                },
+                "editor:stickyscrollenabled": {
+                    "type": "boolean"
+                },
+                "editor:wordwrap": {
+                    "type": "boolean"
+                },
+                "editor:fontsize": {
+                    "type": "number"
+                },
+                "editor:inlinediff": {
+                    "type": "boolean"
+                },
+                "web:*": {
+                    "type": "boolean"
+                },
+                "web:openlinksinternally": {
+                    "type": "boolean"
+                },
+                "web:defaulturl": {
+                    "type": "string"
+                },
+                "web:defaultsearch": {
+                    "type": "string"
+                },
+                "autoupdate:*": {
+                    "type": "boolean"
+                },
+                "autoupdate:enabled": {
+                    "type": "boolean"
+                },
+                "autoupdate:intervalms": {
+                    "type": "number"
+                },
+                "autoupdate:installonquit": {
+                    "type": "boolean"
+                },
+                "autoupdate:channel": {
+                    "type": "string"
+                },
+                "markdown:fontsize": {
+                    "type": "number"
+                },
+                "markdown:fixedfontsize": {
+                    "type": "number"
+                },
+                "preview:showhiddenfiles": {
+                    "type": "boolean"
+                },
+                "preview:defaultsort": {
+                    "type": "string",
+                    "enum": ["name", "modtime"]
+                },
+                "tab:preset": {
+                    "type": "string"
+                },
+                "tab:confirmclose": {
+                    "type": "boolean"
+                },
+                "tab:background": {
+                    "type": "string"
+                },
+                "widget:*": {
+                    "type": "boolean"
+                },
+                "widget:showhelp": {
+                    "type": "boolean"
+                },
+                "window:*": {
+                    "type": "boolean"
+                },
+                "window:fullscreenonlaunch": {
+                    "type": "boolean"
+                },
+                "window:transparent": {
+                    "type": "boolean"
+                },
+                "window:blur": {
+                    "type": "boolean"
+                },
+                "window:opacity": {
+                    "type": "number"
+                },
+                "window:bgcolor": {
+                    "type": "string"
+                },
+                "window:reducedmotion": {
+                    "type": "boolean"
+                },
+                "window:tilegapsize": {
+                    "type": "integer"
+                },
+                "window:showmenubar": {
+                    "type": "boolean"
+                },
+                "window:nativetitlebar": {
+                    "type": "boolean"
+                },
+                "window:nativeopenhandler": {
+                    "type": "boolean"
+                },
+                "window:disablehardwareacceleration": {
+                    "type": "boolean"
+                },
+                "window:maxtabcachesize": {
+                    "type": "integer"
+                },
+                "window:magnifiedblockopacity": {
+                    "type": "number"
+                },
+                "window:magnifiedblocksize": {
+                    "type": "number"
+                },
+                "window:magnifiedblockblurprimarypx": {
+                    "type": "integer"
+                },
+                "window:magnifiedblockblursecondarypx": {
+                    "type": "integer"
+                },
+                "window:confirmclose": {
+                    "type": "boolean"
+                },
+                "window:savelastwindow": {
+                    "type": "boolean"
+                },
+                "window:dimensions": {
+                    "type": "string"
+                },
+                "window:zoom": {
+                    "type": "number"
+                },
+                "telemetry:*": {
+                    "type": "boolean"
+                },
+                "telemetry:enabled": {
+                    "type": "boolean"
+                },
+                "conn:*": {
+                    "type": "boolean"
+                },
+                "conn:askbeforewshinstall": {
+                    "type": "boolean"
+                },
+                "conn:wshenabled": {
+                    "type": "boolean"
+                },
+                "conn:localhostdisplayname": {
+                    "type": "string"
+                },
+                "debug:*": {
+                    "type": "boolean"
+                },
+                "debug:pprofport": {
+                    "type": "integer"
+                },
+                "debug:pprofmemprofilerate": {
+                    "type": "integer"
+                },
+                "debug:webglstatus": {
+                    "type": "boolean"
+                },
+                "tsunami:*": {
+                    "type": "boolean"
+                },
+                "tsunami:scaffoldpath": {
+                    "type": "string"
+                },
+                "tsunami:sdkreplacepath": {
+                    "type": "string"
+                },
+                "tsunami:sdkversion": {
+                    "type": "string"
+                },
+                "tsunami:gopath": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object"
         }
-      },
-      "additionalProperties": false,
-      "type": "object"
     }
-  }
 }

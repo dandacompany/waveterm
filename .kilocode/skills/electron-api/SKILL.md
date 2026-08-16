@@ -28,7 +28,7 @@ In [`frontend/types/custom.d.ts`](frontend/types/custom.d.ts):
 
 ```typescript
 type ElectronApi = {
-    captureScreenshot: (rect: Electron.Rectangle) => Promise<string>; // capture-screenshot
+  captureScreenshot: (rect: Electron.Rectangle) => Promise<string>; // capture-screenshot
 };
 ```
 
@@ -38,7 +38,7 @@ In [`emain/preload.ts`](emain/preload.ts):
 
 ```typescript
 contextBridge.exposeInMainWorld("api", {
-    captureScreenshot: (rect: Rectangle) => ipcRenderer.invoke("capture-screenshot", rect),
+  captureScreenshot: (rect: Rectangle) => ipcRenderer.invoke("capture-screenshot", rect),
 });
 ```
 
@@ -48,10 +48,10 @@ In [`emain/emain-ipc.ts`](emain/emain-ipc.ts):
 
 ```typescript
 electron.ipcMain.handle("capture-screenshot", async (event, rect) => {
-    const tabView = getWaveTabViewByWebContentsId(event.sender.id);
-    if (!tabView) throw new Error("No tab view found");
-    const image = await tabView.webContents.capturePage(rect);
-    return `data:image/png;base64,${image.toPNG().toString("base64")}`;
+  const tabView = getWaveTabViewByWebContentsId(event.sender.id);
+  if (!tabView) throw new Error("No tab view found");
+  const image = await tabView.webContents.capturePage(rect);
+  return `data:image/png;base64,${image.toPNG().toString("base64")}`;
 });
 ```
 
@@ -77,7 +77,7 @@ const dataUrl = await getApi().captureScreenshot({ x: 0, y: 0, width: 800, heigh
 
 ```typescript
 type ElectronApi = {
-    getUserName: () => string; // get-user-name
+  getUserName: () => string; // get-user-name
 };
 ```
 
@@ -91,7 +91,7 @@ getUserName: () => ipcRenderer.sendSync("get-user-name"),
 
 ```typescript
 electron.ipcMain.on("get-user-name", (event) => {
-    event.returnValue = process.env.USER || "unknown";
+  event.returnValue = process.env.USER || "unknown";
 });
 ```
 
@@ -109,7 +109,7 @@ const userName = getApi().getUserName(); // blocks until returns
 
 ```typescript
 type ElectronApi = {
-    openExternal: (url: string) => void; // open-external
+  openExternal: (url: string) => void; // open-external
 };
 ```
 
@@ -123,7 +123,7 @@ openExternal: (url) => ipcRenderer.send("open-external", url),
 
 ```typescript
 electron.ipcMain.on("open-external", (event, url) => {
-    electron.shell.openExternal(url);
+  electron.shell.openExternal(url);
 });
 ```
 
@@ -133,14 +133,14 @@ electron.ipcMain.on("open-external", (event, url) => {
 
 ```typescript
 type ElectronApi = {
-    onZoomFactorChange: (callback: (zoomFactor: number) => void) => void; // zoom-factor-change
+  onZoomFactorChange: (callback: (zoomFactor: number) => void) => void; // zoom-factor-change
 };
 ```
 
 ### 2. Preload
 
 ```typescript
-onZoomFactorChange: (callback) => 
+onZoomFactorChange: (callback) =>
     ipcRenderer.on("zoom-factor-change", (_event, zoomFactor) => callback(zoomFactor)),
 ```
 
@@ -153,20 +153,24 @@ webContents.send("zoom-factor-change", newZoomFactor);
 ## Quick Reference
 
 **Use Sync when:**
+
 - Getting config/env vars
 - Quick lookups, no I/O
 - ⚠️ **CRITICAL**: Always set `event.returnValue` or browser hangs
 
 **Use Async when:**
+
 - File operations
 - Network requests
 - Can fail or take time
 
 **Use Fire-and-forget when:**
+
 - No return value needed
 - Triggering actions
 
 **Electron API vs RPC:**
+
 - Electron API: Native OS features, window management, Electron APIs
 - RPC: Database, backend logic, remote servers
 

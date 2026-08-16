@@ -48,7 +48,7 @@ Add selection-aware focus methods:
 ```typescript
 class FocusManager {
   // Existing
-  focusType: PrimitiveAtom<"node" | "waveai">;  // Single source of truth
+  focusType: PrimitiveAtom<"node" | "waveai">; // Single source of truth
   blockFocusAtom: Atom<string | null>;
 
   // NEW: Selection-aware focus checking

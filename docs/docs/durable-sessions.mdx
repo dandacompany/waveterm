@@ -39,12 +39,12 @@ The session continues running on the remote server even if you close Wave, put y
 
 The shield icon in your terminal header shows the current session status:
 
-| Icon | Status | Description |
-|------|--------|-------------|
-| <i className="fa-sharp fa-regular fa-shield" style={{color: 'rgb(140, 145, 140)'}}></i> | Standard Session | Connection drops will end the session |
-| <i className="fa-sharp fa-solid fa-shield" style={{color: '#0ea5e9'}}></i> | Durable (Attached) | Session is protected and connected |
-| <i className="fa-sharp fa-solid fa-shield" style={{color: '#7dd3fc'}}></i> | Durable (Detached) | Session running, currently disconnected |
-| <i className="fa-sharp fa-solid fa-shield" style={{color: 'rgb(140, 145, 140)'}}></i> | Durable (Awaiting) | Configured but not yet started |
+| Icon                                                                                    | Status             | Description                             |
+| --------------------------------------------------------------------------------------- | ------------------ | --------------------------------------- |
+| <i className="fa-sharp fa-regular fa-shield" style={{color: 'rgb(140, 145, 140)'}}></i> | Standard Session   | Connection drops will end the session   |
+| <i className="fa-sharp fa-solid fa-shield" style={{color: '#0ea5e9'}}></i>              | Durable (Attached) | Session is protected and connected      |
+| <i className="fa-sharp fa-solid fa-shield" style={{color: '#7dd3fc'}}></i>              | Durable (Detached) | Session running, currently disconnected |
+| <i className="fa-sharp fa-solid fa-shield" style={{color: 'rgb(140, 145, 140)'}}></i>   | Durable (Awaiting) | Configured but not yet started          |
 
 Hover over the shield icon to see detailed status information and available actions.
 
@@ -85,8 +85,9 @@ Override for individual terminal blocks through:
 - **Command Line**: Use `wsh setmeta term:durable=true` or `wsh setmeta term:durable=false`
 
 Configuration hierarchy (highest to lowest priority):
+
 1. Block-level setting
-2. Connection-level setting  
+2. Connection-level setting
 3. Global setting
 
 ### Default Behavior
@@ -104,6 +105,7 @@ Configuration hierarchy (highest to lowest priority):
 3. Your session will restart with durability enabled
 
 Or use the context menu:
+
 - Right-click terminal → Advanced → Session Durability → Restart Session in Durable Mode
 
 ### Durable to Standard
@@ -119,19 +121,25 @@ Converting between standard and durable modes requires restarting the shell. Any
 ## Session States
 
 ### Attached
+
 Your terminal is connected to the remote session. You can interact with the shell and see real-time output.
 
 ### Detached
+
 Connection lost, but the session continues running on the remote server. Wave will automatically reconnect when possible. Any commands you ran continue executing.
 
 ### Awaiting Start
+
 Session configured for durability but not yet started. Click "Start Session" or run a command to begin.
 
 ### Starting
+
 Job manager is initializing on the remote server. The session will become attached shortly.
 
 ### Ended
+
 Session has terminated. Common reasons:
+
 - **Exited**: Shell was closed normally (e.g., typed `exit`)
 - **Lost**: Session not found on server (may have been terminated or system rebooted)
 - **Failed to Start**: Job manager encountered an error during initialization
@@ -141,6 +149,7 @@ Click "Restart Session" to start a new durable session, or "Restart as Standard"
 ## Use Cases
 
 ### Long-Running Commands
+
 Start a build, deployment, or data processing job and close your laptop. The command continues executing, and you can check on it later.
 
 ```bash
@@ -152,12 +161,15 @@ Start a build, deployment, or data processing job and close your laptop. The com
 ```
 
 ### Unstable Networks
+
 Work from a café, train, or cellular connection. Brief disconnections won't terminate your session or lose your work.
 
 ### Multiple Locations
+
 Start work on your desktop, continue on your laptop. Your session and its state are preserved on the remote server.
 
 ### System Maintenance
+
 Wave updates, restarts, or crashes won't interrupt your remote work. Reconnect and resume immediately.
 
 ## Session Lifecycle
@@ -184,7 +196,9 @@ This ensures that remote sessions don't accumulate on your servers when you clos
 ## Troubleshooting
 
 ### Session Shows as "Lost"
+
 The session was terminated on the remote server, possibly due to:
+
 - Server reboot
 - Manual termination of the job manager process
 - Remote system running out of resources
@@ -192,13 +206,16 @@ The session was terminated on the remote server, possibly due to:
 **Solution**: Click "Restart Session" to start a new durable session.
 
 ### Session Won't Reconnect
+
 Verify that:
+
 - Your SSH connection to the server is working (check the connection status)
 - The job manager process is still running on the remote server
 
 **Try**: Right-click terminal → Advanced → Force Restart Controller
 
 ### "Failed to Start" Error
+
 The job manager couldn't initialize on the remote server. Check the error message for specific details.
 
 **Try**: Restart the session. If the issue persists, file a bug report with the error details.

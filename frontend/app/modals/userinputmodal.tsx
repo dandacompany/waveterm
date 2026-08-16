@@ -73,7 +73,7 @@ const UserInputModal = (userInputRequest: UserInputRequest) => {
                 handleSubmit();
                 return true;
             }
-			return false;
+            return false;
         },
         [handleSendErrResponse, handleSubmit]
     );
@@ -115,7 +115,9 @@ const UserInputModal = (userInputRequest: UserInputRequest) => {
                         className="accent-accent cursor-pointer"
                         ref={checkboxRef}
                     />
-                    <label htmlFor={`uicheckbox-${userInputRequest.requestid}`} className="cursor-pointer">{userInputRequest.checkboxmsg}</label>
+                    <label htmlFor={`uicheckbox-${userInputRequest.requestid}`} className="cursor-pointer">
+                        {userInputRequest.checkboxmsg}
+                    </label>
                 </div>
             </div>
         );

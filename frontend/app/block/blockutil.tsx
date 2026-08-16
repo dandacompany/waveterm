@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Button } from "@/app/element/button";
-import {
-    MetaKeyAtomFnType,
-    WaveEnv,
-    WaveEnvSubset,
-} from "@/app/waveenv/waveenv";
+import { MetaKeyAtomFnType, WaveEnv, WaveEnvSubset } from "@/app/waveenv/waveenv";
 import { IconButton, ToggleIconButton } from "@/element/iconbutton";
 import { MagnifyIcon } from "@/element/magnify";
 import { MenuButton } from "@/element/menubutton";

@@ -35,12 +35,15 @@ React re-renders with updated state
 ### What the Backend Actually Does
 
 **Backend Reads** (from [`pkg/wshrpc/wshserver/resolvers.go`](../pkg/wshrpc/wshserver/resolvers.go:196-206)):
+
 - **`LeafOrder`** - Used to resolve block numbers in commands (e.g., `wsh block:1` → blockId lookup)
 
 **Backend Writes** (from [`pkg/wcore/layout.go`](../pkg/wcore/layout.go)):
+
 - **`PendingBackendActions`** - Queued layout actions via [`QueueLayoutAction()`](../pkg/wcore/layout.go:101-118)
 
 **Backend NEVER touches**:
+
 - **`RootNode`** - Never read, only written by frontend for persistence
 - **`FocusedNodeId`** - Never read, only written by frontend for persistence
 - **`MagnifiedNodeId`** - Never read, only written by frontend for persistence
@@ -85,16 +88,16 @@ React re-renders (single tick, all atoms see new state)
 class LayoutModel {
   // BEFORE: Bidirectional atom with generation tracking
   // treeStateAtom: WritableLayoutTreeStateAtom
-  
+
   // AFTER: Simple local atom (source of truth)
   private localTreeStateAtom: PrimitiveAtom<LayoutTreeState>;
-  
+
   // Keep reference to WaveObject atom for persistence
   private waveObjectAtom: WritableWaveObjectAtom<LayoutState>;
-  
+
   constructor(tabAtom: Atom<Tab>, ...) {
     this.waveObjectAtom = getLayoutStateAtomFromTab(tabAtom);
-    
+
     // Initialize local atom (starts empty)
     this.localTreeStateAtom = atom<LayoutTreeState>({
       rootNode: undefined,
@@ -104,14 +107,14 @@ class LayoutModel {
       pendingBackendActions: undefined,
       generation: 0  // Can be removed entirely or kept for debugging
     });
-    
+
     // Read from WaveObject ONCE during initialization
     this.initializeFromWaveObject();
   }
-  
+
   private async initializeFromWaveObject() {
     const waveObjState = this.getter(this.waveObjectAtom);
-    
+
     // Load persisted state into local atom
     const initialState: LayoutTreeState = {
       rootNode: waveObjState?.rootnode,
@@ -121,27 +124,27 @@ class LayoutModel {
       pendingBackendActions: waveObjState?.pendingbackendactions,
       generation: 0
     };
-    
+
     // Set local state
     this.treeState = initialState;
     this.setter(this.localTreeStateAtom, initialState);
-    
+
     // Process any pending backend actions
     if (initialState.pendingBackendActions?.length) {
       await this.processPendingBackendActions();
     }
-    
+
     // Initialize tree (compute leafOrder, etc.)
     this.updateTree();
   }
-  
+
   // Process backend-queued actions (startup only)
   private async processPendingBackendActions() {
     const actions = this.treeState.pendingBackendActions;
     if (!actions?.length) return;
-    
+
     this.treeState.pendingBackendActions = undefined;
-    
+
     for (const action of actions) {
       // Convert backend action to frontend action and run through treeReducer
       // This code already exists in onTreeStateAtomUpdated()
@@ -181,35 +184,35 @@ class LayoutModel {
         break;
       // ... all other cases unchanged
     }
-    
+
     if (setState) {
       // Update tree (compute leafOrder, validate, etc.)
       this.updateTree();
-      
+
       // Update local atom IMMEDIATELY (synchronous)
       this.setter(this.localTreeStateAtom, { ...this.treeState });
-      
+
       // Persist to backend asynchronously (fire and forget)
       this.persistToBackend();
     }
-    
+
     return true;
   }
-  
+
   // Fire-and-forget persistence
   private async persistToBackend() {
     const waveObj = this.getter(this.waveObjectAtom);
     if (!waveObj) return;
-    
+
     // Update WaveObject fields
-    waveObj.rootnode = this.treeState.rootNode;           // Persistence only
+    waveObj.rootnode = this.treeState.rootNode; // Persistence only
     waveObj.focusednodeid = this.treeState.focusedNodeId; // Persistence only
     waveObj.magnifiednodeid = this.treeState.magnifiedNodeId; // Persistence only
-    waveObj.leaforder = this.treeState.leafOrder;         // Backend reads this for command resolution!
-    
+    waveObj.leaforder = this.treeState.leafOrder; // Backend reads this for command resolution!
+
     // Write to backend (don't await - fire and forget)
     this.setter(this.waveObjectAtom, waveObj);
-    
+
     // Optional: Debounce if rapid changes are a concern
   }
 }
@@ -226,20 +229,20 @@ class LayoutModel {
       //   const treeState = get(this.treeStateAtom);  // Triggers on any tree change
       //   ...
       // })
-      
+
       // AFTER: Simple dependency on local atom
       isFocused: atom((get) => {
-        const treeState = get(this.localTreeStateAtom);  // Simple read
+        const treeState = get(this.localTreeStateAtom); // Simple read
         const focusType = get(focusManager.focusType);
         return treeState.focusedNodeId === node.id && focusType === "node";
       }),
-      
+
       // All other atoms similarly simplified...
       isMagnified: atom((get) => {
         const treeState = get(this.localTreeStateAtom);
         return treeState.magnifiedNodeId === node.id;
       }),
-      
+
       // ... rest unchanged
     };
   }
@@ -273,10 +276,7 @@ And remove all `generation++` calls from [`layoutTree.ts`](../frontend/layout/li
 // BEFORE: Complex bidirectional atom (60 lines)
 // AFTER: Can be deleted entirely or simplified to just helper for WaveObject access
 
-export function getLayoutStateAtomFromTab(
-  tabAtom: Atom<Tab>,
-  get: Getter
-): WritableWaveObjectAtom<LayoutState> {
+export function getLayoutStateAtomFromTab(tabAtom: Atom<Tab>, get: Getter): WritableWaveObjectAtom<LayoutState> {
   const tabData = get(tabAtom);
   if (!tabData) return;
   const layoutStateOref = WOS.makeORef("layout", tabData.layoutstate);
@@ -301,15 +301,16 @@ export function getLayoutStateAtomFromTab(
 The entire Section 8 ("Layout Model Focus Integration - CRITICAL TIMING") **becomes unnecessary**:
 
 **BEFORE** (complex timing coordination):
+
 ```typescript
 treeReducer(action: LayoutTreeAction) {
   insertNode(this.treeState, action);  // generation++
-  
+
   // CRITICAL: Must update focus manager BEFORE atom commits
   if (action.focused) {
     focusManager.requestNodeFocus();  // Synchronous!
   }
-  
+
   // Then atom commits
   this.setter(this.treeStateAtom, ...);
   // Now isFocused sees correct focusType
@@ -317,18 +318,19 @@ treeReducer(action: LayoutTreeAction) {
 ```
 
 **AFTER** (trivial):
+
 ```typescript
 treeReducer(action: LayoutTreeAction) {
   insertNode(this.treeState, action);  // Just mutates local state
-  
+
   // Update local atom (synchronous)
   this.setter(this.localTreeStateAtom, { ...this.treeState });
-  
+
   // Update focus manager (order doesn't matter - both updated synchronously)
   if (action.focused) {
     focusManager.setBlockFocus();
   }
-  
+
   // Both updates happen in same tick, no race condition possible!
 }
 ```
@@ -336,6 +338,7 @@ treeReducer(action: LayoutTreeAction) {
 ### Code Deletion
 
 **Can delete**:
+
 - `generation` field and all `generation++` calls (~15 places)
 - Complex bidirectional atom logic in [`layoutAtom.ts`](../frontend/layout/lib/layoutAtom.ts) (~40 lines)
 - `lastTreeStateGeneration` tracking in [`LayoutModel`](../frontend/layout/lib/layoutModel.ts)
@@ -358,16 +361,16 @@ private persistToBackend() {
   if (this.persistDebounceTimer) {
     clearTimeout(this.persistDebounceTimer);
   }
-  
+
   this.persistDebounceTimer = setTimeout(() => {
     const waveObj = this.getter(this.waveObjectAtom);
     if (!waveObj) return;
-    
+
     waveObj.rootnode = this.treeState.rootNode;
     waveObj.focusednodeid = this.treeState.focusedNodeId;
     waveObj.magnifiednodeid = this.treeState.magnifiedNodeId;
     waveObj.leaforder = this.treeState.leafOrder;
-    
+
     this.setter(this.waveObjectAtom, waveObj);
     this.persistDebounceTimer = null;
   }, 100);
@@ -387,16 +390,17 @@ private persistToBackend() {
 **After**: Same - `initializeFromWaveObject()` reads persisted state. No change in behavior.
 
 ### 4. Backend Actions (New Blocks)
+
 ### 5. LeafOrder and CLI Commands
 
 **Concern**: The backend reads `LeafOrder` for CLI command resolution (e.g., `wsh block:1`). What if it's not synced yet?
 
 **Solution**: Fire-and-forget is perfectly fine! CLI commands aren't time-sensitive:
+
 - Commands are typed/run by users (human speed, not machine speed)
 - Even if `LeafOrder` is 100ms behind, no one will notice
 - By the time a user types `wsh block:1`, the async write has long since completed
 - Worst case: User types command during a split operation and gets previous block - extremely rare and not breaking
-
 
 ## Immutability and Jotai Atoms
 
@@ -428,17 +432,19 @@ this.setter(this.localTreeStateAtom, { ...this.treeState });
 ```
 
 **This works because**:
+
 1. **Jotai checks reference equality** on the atom value itself (the `LayoutTreeState` object)
 2. **`{ ...this.treeState }` creates a NEW object** with a different reference
 3. **Nested structures don't matter** - Jotai doesn't do deep equality checks
 
 **Example**:
+
 ```typescript
 const oldState = { rootNode: someTree, focusedNodeId: "node1" };
 const newState = { ...oldState };
 
-oldState === newState        // FALSE - different objects!
-oldState.rootNode === newState.rootNode  // TRUE - same tree reference
+oldState === newState; // FALSE - different objects!
+oldState.rootNode === newState.rootNode; // TRUE - same tree reference
 
 // But Jotai only checks the first comparison, so it detects the change!
 ```
@@ -446,6 +452,7 @@ oldState.rootNode === newState.rootNode  // TRUE - same tree reference
 ### Tree Mutations Don't Need Immutability
 
 All tree operations in [`layoutTree.ts`](../frontend/layout/lib/layoutTree.ts) **mutate in place**:
+
 - `insertNode()` - Mutates `layoutState.rootNode`
 
 ### Derived Atoms Will Update Correctly ✓
@@ -476,6 +483,7 @@ isMagnified: atom((get) => {
 ### Why They'll Still Work with Local Atoms
 
 **After the change**:
+
 ```typescript
 isFocused: atom((get) => {
     const treeState = get(this.localTreeStateAtom);  // Subscribe to localTreeStateAtom
@@ -486,6 +494,7 @@ isFocused: atom((get) => {
 ```
 
 **The update flow**:
+
 1. User clicks block → `focusNode()` called
 2. `treeReducer()` runs → mutates `this.treeState.focusedNodeId = newId`
 3. `this.setter(this.localTreeStateAtom, { ...this.treeState })` ← **New reference!**
@@ -500,7 +509,7 @@ isFocused: atom((get) => {
 **We're not mutating fields inside the atom** - we're replacing the entire state object:
 
 ```typescript
-// OLD way (current): 
+// OLD way (current):
 // 1. Mutate this.treeState.focusedNodeId = newId
 // 2. Bump this.treeState.generation++
 // 3. Set bidirectional atom (checks generation, writes to WaveObject, reads back, updates)
@@ -515,6 +524,7 @@ isFocused: atom((get) => {
 **Both approaches create a new state object that triggers Jotai's reactivity!**
 
 The new way is actually **MORE reliable** because:
+
 - No round-trip delay
 - No generation checking
 - Direct, synchronous update
@@ -529,12 +539,13 @@ The new way is actually **MORE reliable** because:
 ```typescript
 // Hypothetical derived atom
 someAtom: atom((get) => {
-    const treeState = get(this.localTreeStateAtom);
-    return treeState.rootNode.children.length;  // Nested access
-})
+  const treeState = get(this.localTreeStateAtom);
+  return treeState.rootNode.children.length; // Nested access
+});
 ```
 
 **This works because**:
+
 1. We create new `LayoutTreeState` object: `{ ...this.treeState }`
 2. Jotai sees new reference → notifies subscribers
 3. Getter re-runs, calls `get(this.localTreeStateAtom)`
@@ -547,7 +558,8 @@ someAtom: atom((get) => {
 ### Verification
 
 All derived atoms in NodeModel:
-- ✅ `isFocused` - depends on `treeState.focusedNodeId` 
+
+- ✅ `isFocused` - depends on `treeState.focusedNodeId`
 - ✅ `isMagnified` - depends on `treeState.magnifiedNodeId`
 - ✅ `blockNum` - depends on separate `this.leafOrder` atom (unaffected)
 - ✅ `isEphemeral` - depends on separate `this.ephemeralNode` atom (unaffected)
@@ -562,10 +574,11 @@ This is fine! We're not relying on immutability for change detection. We're rely
 ### Backend Round-Trip
 
 When reading from WaveObject on initialization:
+
 ```typescript
 const waveObjState = this.getter(this.waveObjectAtom);
 const initialState: LayoutTreeState = {
-  rootNode: waveObjState?.rootnode,  // New reference from backend
+  rootNode: waveObjState?.rootnode, // New reference from backend
   focusedNodeId: waveObjState?.focusednodeid,
   // ...
 };
@@ -583,7 +596,6 @@ This creates a **completely new object** with new references, which is even more
 
 ✅ **Tree mutations are fine** - They've always worked this way
 
-
 **Current**: Backend queues actions via [`QueueLayoutAction()`](../pkg/wcore/layout.go:101), frontend processes via `pendingBackendActions`.
 
 **After**: Same - `initializeFromWaveObject()` processes pending actions. No change needed.
@@ -592,7 +604,8 @@ This creates a **completely new object** with new references, which is even more
 
 **Concern**: What if the async write to WaveObject fails?
 
-**Solution**: 
+**Solution**:
+
 1. The app continues working (local state is fine)
 2. On next persistence attempt, full state is written again
 3. On tab reload, worst case is state from last successful write
@@ -681,6 +694,7 @@ This also makes the WaveAI focus integration trivial, eliminating the need for c
 ## Recommendation
 
 Implement this simplification **before** adding WaveAI focus features. The cleaner foundation will make the focus work much easier and the codebase more maintainable long-term.
+
 # Wave Terminal Layout System - Simplification via Write Cache Pattern
 
 ## Risk Assessment: LOW RISK, Well-Contained Change
@@ -713,7 +727,9 @@ Implement this simplification **before** adding WaveAI focus features. The clean
 ### Why This is Low Risk
 
 #### 1. **Fail-Fast Behavior** ✓
+
 If we break something, it will be **immediately obvious**:
+
 - Split horizontal/vertical won't work → visible immediately
 - Block focus won't work → obvious when clicking
 - Close block won't work → obvious
@@ -722,6 +738,7 @@ If we break something, it will be **immediately obvious**:
 **No subtle corruption**: This change affects reactive state flow, not data persistence. If it breaks, the UI breaks obviously. We won't get "sometimes it works, sometimes it doesn't."
 
 #### 2. **Well-Contained Scope** ✓
+
 - **All changes in one directory**: `frontend/layout/`
 - **No changes to**:
   - Block components (unchanged)
@@ -731,13 +748,16 @@ If we break something, it will be **immediately obvious**:
   - Backend Go code (unchanged)
 
 The **interface** to the layout system stays the same:
+
 - Blocks still call `nodeModel.focusNode()`
 - Blocks still subscribe to `nodeModel.isFocused`
 - Keyboard nav still calls `layoutModel.focusNode()`
 - Nothing outside the layout system needs to know about the change
 
 #### 3. **No Data Corruption Risk** ✓
+
 This change affects **reactive state propagation**, not data storage:
+
 - WaveObject still stores the same data
 - Backend still queues actions the same way
 - Blocks still have the same IDs
@@ -750,16 +770,18 @@ This change affects **reactive state propagation**, not data storage:
 Can be done in safe phases:
 
 **Phase 1**: Add alongside existing (no breaking changes)
+
 ```typescript
 class LayoutModel {
-  treeStateAtom: WritableLayoutTreeStateAtom;  // Keep old
-  localTreeStateAtom: PrimitiveAtom<LayoutTreeState>;  // Add new
-  
+  treeStateAtom: WritableLayoutTreeStateAtom; // Keep old
+  localTreeStateAtom: PrimitiveAtom<LayoutTreeState>; // Add new
+
   // Keep both in sync temporarily
 }
 ```
 
 **Phase 2**: Switch consumers one at a time
+
 ```typescript
 // Change this gradually
 isFocused: atom((get) => {
@@ -776,6 +798,7 @@ isFocused: atom((get) => {
 #### 5. **Easy to Test** ✓
 
 Every layout operation is user-visible and testable:
+
 - [ ] Split horizontal → obvious if broken
 - [ ] Split vertical → obvious if broken
 - [ ] Close block → obvious if broken
@@ -790,6 +813,7 @@ No subtle edge cases to hunt down. If it works in manual testing, it works.
 ### Comparison to High-Risk Changes
 
 **This change is NOT**:
+
 - ❌ Touching 20+ files across the codebase
 - ❌ Changing subtle timing in async operations
 - ❌ Modifying data storage formats
@@ -798,6 +822,7 @@ No subtle edge cases to hunt down. If it works in manual testing, it works.
 - ❌ Creating subtle race conditions
 
 **This change IS**:
+
 - ✅ Contained to 5 files in one directory
 - ✅ Synchronous state updates (simpler than current!)
 - ✅ Same data format, just different flow
@@ -807,31 +832,34 @@ No subtle edge cases to hunt down. If it works in manual testing, it works.
 
 ### What Could Go Wrong? (And How We'd Know)
 
-| Potential Issue | How We'd Detect | Recovery |
-|-----------------|-----------------|----------|
-| Local atom doesn't update | Layout frozen, nothing responds | Immediately obvious, revert |
-| Persistence fails silently | State doesn't survive restart | Caught in testing, add logging |
-| isFocused calculation wrong | Wrong focus ring | Immediately obvious, fix calculation |
+| Potential Issue                | How We'd Detect                       | Recovery                                 |
+| ------------------------------ | ------------------------------------- | ---------------------------------------- |
+| Local atom doesn't update      | Layout frozen, nothing responds       | Immediately obvious, revert              |
+| Persistence fails silently     | State doesn't survive restart         | Caught in testing, add logging           |
+| isFocused calculation wrong    | Wrong focus ring                      | Immediately obvious, fix calculation     |
 | Missing generation++ somewhere | Old code path tries to use generation | Compile error or immediate runtime error |
-| Tab switching breaks | Tabs don't load correctly | Immediately obvious |
+| Tab switching breaks           | Tabs don't load correctly             | Immediately obvious                      |
 
 **All failure modes are immediate and obvious!**
 
 ### Difficulty Assessment
 
 **Conceptual Difficulty**: LOW
+
 - Replace bidirectional atom with simple atom
 - Add async persist function
 - Remove generation tracking
 - Very straightforward refactor
 
 **Code Difficulty**: LOW-MEDIUM
+
 - Changes are localized and mechanical
 - Most changes are deletions (always good!)
 - New code is simpler than old code
 - No complex algorithms to implement
 
 **Testing Difficulty**: LOW
+
 - All functionality is user-visible
 - No need for complex test scenarios
 - Manual testing catches everything
@@ -840,11 +868,13 @@ No subtle edge cases to hunt down. If it works in manual testing, it works.
 ### Recommendation
 
 This is a **low-risk, high-reward change**:
+
 - **Risk**: LOW (contained, fail-fast, no corruption)
 - **Difficulty**: LOW-MEDIUM (straightforward refactor)
 - **Reward**: HIGH (70% less complexity, easier future work)
 
 **Suggested approach**:
+
 1. Implement in a feature branch
 2. Add local atom alongside existing system
 3. Test thoroughly with both systems running

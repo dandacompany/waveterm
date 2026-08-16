@@ -4,35 +4,92 @@
 // Always block (TUIs / pagers / multiplexers / known interactive UIs)
 const ALWAYS_BLOCK = [
     // multiplexers
-    "tmux", "screen", "byobu", "dtach", "abduco", "tmate",
+    "tmux",
+    "screen",
+    "byobu",
+    "dtach",
+    "abduco",
+    "tmate",
     // editors/pagers
-    "vim", "nvim", "emacs", "nano", "less", "more", "man", "most", "view",
+    "vim",
+    "nvim",
+    "emacs",
+    "nano",
+    "less",
+    "more",
+    "man",
+    "most",
+    "view",
     // TUIs / tools
-    "htop", "top", "btop", "fzf", "ranger", "mc", "nnn", "k9s", "nmtui", "alsamixer",
-    "tig", "gdb", "lldb",
+    "htop",
+    "top",
+    "btop",
+    "fzf",
+    "ranger",
+    "mc",
+    "nnn",
+    "k9s",
+    "nmtui",
+    "alsamixer",
+    "tig",
+    "gdb",
+    "lldb",
     // mail/irc
-    "mutt", "neomutt", "alpine", "weechat", "irssi",
+    "mutt",
+    "neomutt",
+    "alpine",
+    "weechat",
+    "irssi",
     // dialog UIs
-    "dialog", "whiptail",
+    "dialog",
+    "whiptail",
     // DB shells
-    "psql", "mysql", "sqlite3", "mongo", "redis-cli",
+    "psql",
+    "mysql",
+    "sqlite3",
+    "mongo",
+    "redis-cli",
 ];
 
 // Bare REPLs only block when no args
-const BARE_REPLS = [
-    "python", "python3", "python2", "node", "ruby", "perl", "php", "lua", "ipython", "bpython", "irb",
-];
+const BARE_REPLS = ["python", "python3", "python2", "node", "ruby", "perl", "php", "lua", "ipython", "bpython", "irb"];
 
 // Shells: block only if interactive/new shell
 const SHELLS = [
-    "bash", "sh", "zsh", "fish", "ksh", "mksh", "dash", "ash", "tcsh", "csh",
-    "xonsh", "elvish", "nu", "nushell", "pwsh", "powershell", "cmd",
+    "bash",
+    "sh",
+    "zsh",
+    "fish",
+    "ksh",
+    "mksh",
+    "dash",
+    "ash",
+    "tcsh",
+    "csh",
+    "xonsh",
+    "elvish",
+    "nu",
+    "nushell",
+    "pwsh",
+    "powershell",
+    "cmd",
 ];
 
 // Wrappers to skip
 const WRAPPERS = [
-    "sudo", "doas", "pkexec", "rlwrap", "env", "time", "nice", "nohup",
-    "chrt", "stdbuf", "script", "scriptreplay", "sshpass",
+    "sudo",
+    "doas",
+    "pkexec",
+    "rlwrap",
+    "env",
+    "time",
+    "nice",
+    "nohup",
+    "chrt",
+    "stdbuf",
+    "script",
+    "scriptreplay",
+    "sshpass",
 ];
 
 function looksInteractiveShellArgs(args: string[]): boolean {

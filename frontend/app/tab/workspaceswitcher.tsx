@@ -1,6 +1,7 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { globalStore } from "@/app/store/jotaiStore";
 import { useWaveEnv, WaveEnv, WaveEnvSubset } from "@/app/waveenv/waveenv";
 import {
     ExpandableMenu,
@@ -19,7 +20,6 @@ import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import { CSSProperties, forwardRef, useCallback, useEffect } from "react";
 import WorkspaceSVG from "../asset/workspace.svg";
 import { IconButton } from "../element/iconbutton";
-import { globalStore } from "@/app/store/jotaiStore";
 import { makeORef } from "../store/wos";
 import { waveEventSubscribeSingle } from "../store/wps";
 import { WorkspaceEditor } from "./workspaceeditor";

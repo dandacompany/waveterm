@@ -158,12 +158,14 @@ dmesg | wsh ai -s - -m "help me understand these errors"
 ```
 
 **Flags:**
+
 - `-` - Read from stdin instead of a file
 - `-m, --message` - Add message text along with files
 - `-s, --submit` - Auto-submit immediately (default is to wait for user)
 - `-n, --new` - Clear chat and start fresh conversation
 
 **File Limits:**
+
 - Text files: 200KB max
 - PDFs: 5MB max
 - Images: 7MB max
@@ -172,13 +174,11 @@ dmesg | wsh ai -s - -m "help me understand these errors"
 ## Tips & Features
 
 1. **Working with Blocks**
-
    - Use block numbers (1-9) to target specific blocks within a tab (hold Ctrl+Shift to see block numbers)
    - Can get full block ids by right click a block's header and selecting "Copy Block Id" (useful for scripting)
    - Use references like "this", "tab", "workspace", or "global" for different scopes
 
 2. **Data Storage**
-
    - Use `wsh setvar/getvar` for configuration and secrets
    - Store file data using `wsh file`, which can be easily referenced in all terminals (local and remote)
    - Use appropriate storage scopes (block, tab, workspace, global)

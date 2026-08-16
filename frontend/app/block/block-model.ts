@@ -13,7 +13,9 @@ export class BlockModel {
     private static instance: BlockModel | null = null;
     private blockHighlightAtomCache = new Map<string, jotai.Atom<BlockHighlightType | null>>();
 
-    blockHighlightAtom: jotai.PrimitiveAtom<BlockHighlightType> = jotai.atom(null) as jotai.PrimitiveAtom<BlockHighlightType>;
+    blockHighlightAtom: jotai.PrimitiveAtom<BlockHighlightType> = jotai.atom(
+        null
+    ) as jotai.PrimitiveAtom<BlockHighlightType>;
 
     private constructor() {
         // Empty for now

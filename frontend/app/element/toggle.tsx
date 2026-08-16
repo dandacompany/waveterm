@@ -1,8 +1,8 @@
 // Copyright 2025, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useRef } from "react";
 import { cn } from "@/util/util";
+import { useRef } from "react";
 import "./toggle.scss";
 
 interface ToggleProps {

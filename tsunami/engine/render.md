@@ -145,12 +145,10 @@ type ChildKey struct {
 ### Matching Rules
 
 1. **Keyed elements**: Match by tag + key, position ignored
-
    - `<div key="a">` only matches `<div key="a">`
    - Position changes don't break identity
 
 2. **Non-keyed elements**: Match by tag + position
-
    - `<div>` at position 0 only matches `<div>` at position 0
    - Moving elements breaks identity and causes remount
 

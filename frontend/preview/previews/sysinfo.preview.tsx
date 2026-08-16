@@ -19,7 +19,13 @@ const PreviewNodeId = "preview-sysinfo-node";
 export default function SysinfoPreview() {
     const historyRef = React.useRef(makeMockSysinfoHistory());
     const nodeModel = React.useMemo(
-        () => makeMockNodeModel({ nodeId: PreviewNodeId, blockId: SysinfoBlockId, innerRect: { width: "920px", height: "560px" }, numLeafs: 2 }),
+        () =>
+            makeMockNodeModel({
+                nodeId: PreviewNodeId,
+                blockId: SysinfoBlockId,
+                innerRect: { width: "920px", height: "560px" },
+                numLeafs: 2,
+            }),
         []
     );
 

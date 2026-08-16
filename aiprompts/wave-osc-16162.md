@@ -11,6 +11,7 @@ ESC ] 16162 ; command [;<json-data>] BEL
 ```
 
 Where:
+
 - `ESC` = `\033` (escape character)
 - `BEL` = `\007` (bell character)
 - `command` = Single letter (A, C, M, D, I, or R)
@@ -29,6 +30,7 @@ Marks the beginning of a new shell prompt.
 **Purpose:** Signals to the terminal that a new prompt is being drawn. This helps Wave Terminal distinguish between prompt output and command output.
 
 **Example:**
+
 ```bash
 printf '\033]16162;A\007'
 ```
@@ -42,6 +44,7 @@ Sent immediately before a command is executed, optionally including the command 
 **Format:** `C[;<json-data>]`
 
 **Data Type:**
+
 ```typescript
 {
   cmd64?: string;  // base64-encoded command text
@@ -53,6 +56,7 @@ Sent immediately before a command is executed, optionally including the command 
 **Purpose:** Notifies the terminal that a command is about to execute. The command text is base64-encoded to handle special characters safely.
 
 **Example:**
+
 ```bash
 cmd64=$(printf '%s' "ls -la" | base64)
 printf '\033]16162;C;{"cmd64":"%s"}\007' "$cmd64"
@@ -67,6 +71,7 @@ Sends shell metadata information (typically only once at shell initialization).
 **Format:** `M;<json-data>`
 
 **Data Type:**
+
 ```typescript
 {
   shell?: string;        // Shell name (e.g., "zsh", "bash")
@@ -81,6 +86,7 @@ Sends shell metadata information (typically only once at shell initialization).
 **Purpose:** Provides Wave Terminal with information about the shell environment and operating system.
 
 **Example:**
+
 ```bash
 uname_info=$(uname -smr 2>/dev/null)
 printf '\033]16162;M;{"shell":"zsh","shellversion":"5.9","uname":"%s"}\007' "$uname_info"
@@ -95,6 +101,7 @@ Reports the exit status of the previously executed command.
 **Format:** `D;<json-data>`
 
 **Data Type:**
+
 ```typescript
 {
   exitcode?: number;  // Exit status code of the previous command
@@ -106,6 +113,7 @@ Reports the exit status of the previously executed command.
 **Purpose:** Communicates whether the previous command succeeded or failed, allowing Wave Terminal to display success/failure indicators.
 
 **Example:**
+
 ```bash
 # After command exits with status 0
 printf '\033]16162;D;{"exitcode":0}\007'
@@ -123,6 +131,7 @@ Reports the current state of the command line input buffer.
 **Format:** `I;<json-data>`
 
 **Data Type:**
+
 ```typescript
 {
   inputempty?: boolean;  // Whether the command line buffer is empty
@@ -130,12 +139,14 @@ Reports the current state of the command line input buffer.
 ```
 
 **When:** Sent during ZLE (Zsh Line Editor) hooks when buffer state changes
+
 - `zle-line-init` - When line editor is initialized
 - `zle-line-pre-redraw` - Before line is redrawn
 
 **Purpose:** Allows Wave Terminal to track the state of the command line input. Currently reports whether the buffer is empty, but may be extended to include additional input state information in the future.
 
 **Example:**
+
 ```bash
 # When buffer is empty
 I;{"inputempty":true}
@@ -155,11 +166,13 @@ Resets the terminal if it's in alternate buffer mode.
 **Purpose:** If the terminal is currently displaying the alternate screen buffer, this command switches back to the normal buffer. This is useful for recovering from programs that crash without properly restoring the screen.
 
 **Behavior:**
+
 - Checks if terminal is in alternate buffer mode (`terminal.buffer.active.type === "alternate"`)
 - If in alternate mode, sends `ESC [ ? 1049 l` to exit alternate buffer
 - If not in alternate mode, does nothing
 
 **Example:**
+
 ```bash
 R
 ```
@@ -173,19 +186,19 @@ Here's the typical sequence during shell interaction:
 ```
 1. Shell starts
    → M;<json> (metadata - shell info)
-   
+
 2. First prompt appears
    → A (prompt start)
-   
+
 3. User types command and presses Enter
    → I;{"inputempty":false} (input no longer empty - sent as user types)
    → C;{"cmd64":"..."} (command about to execute)
-   
+
 4. Command runs and completes
    → D;{"exitcode":<status>} (exit status)
    → I;{"inputempty":true} (input empty again)
    → A (next prompt start)
-   
+
 5. Repeat from step 3...
 ```
 
@@ -209,6 +222,7 @@ Wave Terminal also uses the standard **OSC 7** sequence for reporting the curren
 **Format:** `7;file://<hostname><encoded_path>`
 
 This is sent:
+
 - During first precmd (after metadata)
 - In the `chpwd` hook (whenever directory changes)
 

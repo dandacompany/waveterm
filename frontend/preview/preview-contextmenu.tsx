@@ -1,17 +1,17 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { cn } from "@/util/util";
 import {
     autoUpdate,
     flip,
     FloatingPortal,
     offset,
     shift,
+    useFloating,
     type Placement,
     type VirtualElement,
-    useFloating,
 } from "@floating-ui/react";
-import { cn } from "@/util/util";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 type PreviewContextMenuState = {
@@ -128,7 +128,13 @@ const PreviewContextMenuItem = memo(
             <>
                 <div
                     ref={rowRef}
-                    role={item.type === "checkbox" ? "menuitemcheckbox" : item.type === "radio" ? "menuitemradio" : "menuitem"}
+                    role={
+                        item.type === "checkbox"
+                            ? "menuitemcheckbox"
+                            : item.type === "radio"
+                              ? "menuitemradio"
+                              : "menuitem"
+                    }
                     aria-disabled={isDisabled}
                     aria-checked={item.type === "checkbox" || item.type === "radio" ? isChecked : undefined}
                     data-context-menu-item={item.label ?? item.type ?? "item"}
@@ -152,7 +158,9 @@ const PreviewContextMenuItem = memo(
                             </span>
                             <div className="flex min-w-0 flex-1 flex-col">
                                 <span className="truncate">{item.label}</span>
-                                {item.sublabel ? <span className="truncate text-[10px] text-muted">{item.sublabel}</span> : null}
+                                {item.sublabel ? (
+                                    <span className="truncate text-[10px] text-muted">{item.sublabel}</span>
+                                ) : null}
                             </div>
                             {hasSubmenu ? (
                                 <span className="ml-2 text-[10px] text-muted">
@@ -182,7 +190,17 @@ const PreviewContextMenuItem = memo(
 PreviewContextMenuItem.displayName = "PreviewContextMenuItem";
 
 const PreviewContextMenuPanel = memo(
-    ({ items, point, referenceElement, placement, depth, parentPath, openPath, setOpenPath, closeMenu }: PreviewContextMenuPanelProps) => {
+    ({
+        items,
+        point,
+        referenceElement,
+        placement,
+        depth,
+        parentPath,
+        openPath,
+        setOpenPath,
+        closeMenu,
+    }: PreviewContextMenuPanelProps) => {
         const visibleItems = getVisibleItems(items);
         const virtualReference = useMemo(() => {
             if (point == null) {

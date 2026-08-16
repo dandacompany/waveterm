@@ -29,8 +29,8 @@ const UpgradeOnboardingModal_v0_14_1_Content = () => {
                                 <strong>Scroll Position on Resize</strong> - Terminal stays at bottom across resizes
                             </li>
                             <li>
-                                <strong>Terminal Scrollback Save</strong> - New context menu item and{" "}
-                                <code>wsh</code> command to save scrollback to a file
+                                <strong>Terminal Scrollback Save</strong> - New context menu item and <code>wsh</code>{" "}
+                                command to save scrollback to a file
                             </li>
                         </ul>
                     </div>

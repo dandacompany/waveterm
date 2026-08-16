@@ -13,11 +13,13 @@ A split-screen builder for creating Tsunami applications: chat interface on left
 ### Right Panel
 
 **Top Section - Tabs:**
+
 - **👁️ Preview** (default) - Live preview of running Tsunami app, updates automatically after successful compilation
 - **📝 Code** - Monaco editor for manual edits to app.go
 - **📁 Files** - Static assets browser (images, etc)
 
 **Bottom Section - Build Panel (closable):**
+
 - Shows compilation status and output (like VSCode's terminal panel)
 - Displays success messages or errors with line numbers
 - Auto-runs after AI edits

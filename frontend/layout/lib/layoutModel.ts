@@ -823,9 +823,8 @@ export class LayoutModel {
             return resizeAction?.resizeOperations.find((op) => op.nodeId === node.id)?.size ?? node.size;
         }
 
-        const additionalProps: LayoutNodeAdditionalProps = node.id in additionalPropsMap
-            ? additionalPropsMap[node.id]
-            : { treeKey: "0" };
+        const additionalProps: LayoutNodeAdditionalProps =
+            node.id in additionalPropsMap ? additionalPropsMap[node.id] : { treeKey: "0" };
 
         const nodeRect: Dimensions = node.id === this.treeState.rootNode.id ? boundingRect : additionalProps.rect;
         const nodeIsRow = node.flexDirection === FlexDirection.Row;

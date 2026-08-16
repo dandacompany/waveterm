@@ -1,8 +1,8 @@
 // Copyright 2025, Command Line Inc
 // SPDX-License-Identifier: Apache-2.0
 
-import * as WOS from "@/app/store/wos";
 import { ClientModel } from "@/app/store/client-model";
+import * as WOS from "@/app/store/wos";
 import { getApi } from "@/store/global";
 import * as util from "@/util/util";
 import { atom, Atom } from "jotai";

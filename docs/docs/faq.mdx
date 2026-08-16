@@ -33,7 +33,6 @@ Just remember in JSON, backslashes need to be escaped. So add this to your [sett
 
 `wsh` is an internal CLI for extending control over Wave to the command line, you can learn more about it [here](./wsh). To prevent misuse by other applications, `wsh` requires an access token provided by Wave to work and will not function outside of the app.
 
-
 ## Why does Wave warn me about ARM64 translation when it launches?
 
 macOS and Windows both have compatibility layers that allow x64 applications to run on ARM computers. This helps more apps run on these systems while developers work to add native ARM support to their applications. However, it comes with significant performance tradeoffs.
@@ -59,11 +58,12 @@ sudo snap install waveterm --classic --beta
 
 ## Can I use Wave AI without enabling telemetry?
 
-<VersionBadge version="v0.13.1" noLeftMargin={true}/>
+<VersionBadge version="v0.13.1" noLeftMargin={true} />
 
 Yes! Wave AI is normally disabled when telemetry is not enabled. However, you can enable Wave AI features without telemetry by configuring your own custom AI model (either a local model or using your own API key).
 
 To enable Wave AI without telemetry:
+
 1. Configure a custom AI mode (see [Wave AI documentation](./waveai-modes))
 2. Set `waveai:defaultmode` to your custom mode's key in your Wave settings
 

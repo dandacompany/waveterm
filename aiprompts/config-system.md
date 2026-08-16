@@ -200,6 +200,7 @@ task generate
 ```
 
 **What this does:**
+
 - Runs `task build:schema` (automatically generates JSON schema from Go structs)
 - Generates TypeScript type definitions in [`frontend/types/gotypes.d.ts`](frontend/types/gotypes.d.ts)
 - Generates RPC client APIs

@@ -3,9 +3,9 @@
 
 import { globalStore } from "@/app/store/jotaiStore";
 import { makeMockWaveEnv } from "@/preview/mock/mockwaveenv";
+import { atom } from "jotai";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { atom } from "jotai";
 import { getWebPreviewDisplayUrl, WebViewModel, WebViewPreviewFallback } from "./webview";
 
 describe("webview preview fallback", () => {

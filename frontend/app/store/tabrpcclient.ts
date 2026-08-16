@@ -159,7 +159,9 @@ export class TabClient extends WshClient {
                 if (bcm?.viewModel) {
                     const termViewModel = bcm.viewModel as TermViewModel;
                     if (termViewModel.termRef?.current?.shellIntegrationStatusAtom) {
-                        const shellIntegrationStatus = globalStore.get(termViewModel.termRef.current.shellIntegrationStatusAtom);
+                        const shellIntegrationStatus = globalStore.get(
+                            termViewModel.termRef.current.shellIntegrationStatusAtom
+                        );
                         result.termshellintegrationstatus = shellIntegrationStatus || "";
                     }
                     if (termViewModel.termRef?.current?.lastCommandAtom) {

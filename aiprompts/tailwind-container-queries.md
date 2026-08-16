@@ -27,11 +27,9 @@ For max-width queries, use `@max-` prefix:
 <div class="@container">
   <!-- Shows on small containers, hides on large -->
   <div class="block @max-sm:hidden">Only on containers < sm</div>
-  
+
   <!-- Custom breakpoint -->
-  <div class="@max-w600:fixed @max-w600:bg-background">
-    Fixed overlay on small, normal on large
-  </div>
+  <div class="@max-w600:fixed @max-w600:bg-background">Fixed overlay on small, normal on large</div>
 </div>
 ```
 
@@ -61,10 +59,10 @@ Usage examples:
 ```html
 <!-- Min-width (container >= 600px) -->
 <div class="@w600:block @w600:h-full">
-
-<!-- Max-width (container < 600px) -->
-<div class="@max-w600:hidden @max-w600:fixed">
-
-<!-- Smaller breakpoints -->
-<div class="@xs:ml-4 @max-xxs:p-2">
+  <!-- Max-width (container < 600px) -->
+  <div class="@max-w600:hidden @max-w600:fixed">
+    <!-- Smaller breakpoints -->
+    <div class="@xs:ml-4 @max-xxs:p-2"></div>
+  </div>
+</div>
 ```

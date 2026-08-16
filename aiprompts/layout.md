@@ -5,7 +5,8 @@ The Wave Terminal layout system is a sophisticated tile-based layout engine buil
 ## Overview
 
 The layout system manages a tree of `LayoutNode` objects that represent the hierarchical structure of content. Each node can either be:
-- **Leaf node**: Contains actual content (block data)  
+
+- **Leaf node**: Contains actual content (block data)
 - **Container node**: Contains child nodes with a specific flex direction
 
 The system uses CSS Flexbox for positioning but maintains its own tree structure for state management, drag-and-drop operations, and complex layout manipulations.
@@ -17,7 +18,7 @@ The system uses CSS Flexbox for positioning but maintains its own tree structure
 ```
 frontend/layout/lib/
 ├── TileLayout.tsx          # Main React component
-├── layoutAtom.ts           # Jotai state management  
+├── layoutAtom.ts           # Jotai state management
 ├── layoutModel.ts          # Core model class
 ├── layoutModelHooks.ts     # React hooks for integration
 ├── layoutNode.ts           # Node manipulation functions
@@ -36,15 +37,16 @@ The fundamental building block of the layout system:
 
 ```typescript
 interface LayoutNode {
-    id: string;                    // Unique identifier
-    data?: TabLayoutData;          // Content data (only for leaf nodes)
-    children?: LayoutNode[];       // Child nodes (only for containers)
-    flexDirection: FlexDirection;  // "row" or "column"
-    size: number;                  // Flex size (0-100)
+  id: string; // Unique identifier
+  data?: TabLayoutData; // Content data (only for leaf nodes)
+  children?: LayoutNode[]; // Child nodes (only for containers)
+  flexDirection: FlexDirection; // "row" or "column"
+  size: number; // Flex size (0-100)
 }
 ```
 
 **Key Rules:**
+
 - Either `data` OR `children` must be defined, never both
 - Leaf nodes have `data`, container nodes have `children`
 - All nodes have a `flexDirection` that determines layout axis
@@ -56,16 +58,17 @@ The complete state of the layout:
 
 ```typescript
 interface LayoutTreeState {
-    rootNode: LayoutNode;                    // Root of the tree
-    focusedNodeId?: string;                  // Currently focused node
-    magnifiedNodeId?: string;                // Currently magnified node
-    leafOrder?: LeafOrderEntry[];            // Computed leaf ordering
-    pendingBackendActions: LayoutActionData[]; // Actions from backend
-    generation: number;                      // State version number
+  rootNode: LayoutNode; // Root of the tree
+  focusedNodeId?: string; // Currently focused node
+  magnifiedNodeId?: string; // Currently magnified node
+  leafOrder?: LeafOrderEntry[]; // Computed leaf ordering
+  pendingBackendActions: LayoutActionData[]; // Actions from backend
+  generation: number; // State version number
 }
 ```
 
 **Generation System:**
+
 - Incremented on every state change
 - Used for optimistic updates and conflict resolution
 - Prevents stale state overwrites
@@ -76,19 +79,19 @@ Runtime model for individual nodes, providing React-friendly state:
 
 ```typescript
 interface NodeModel {
-    additionalProps: Atom<LayoutNodeAdditionalProps>;
-    innerRect: Atom<CSSProperties>;
-    blockNum: Atom<number>;
-    nodeId: string;
-    blockId: string;
-    isFocused: Atom<boolean>;
-    isMagnified: Atom<boolean>;
-    isEphemeral: Atom<boolean>;
-    toggleMagnify: () => void;
-    focusNode: () => void;
-    onClose: () => void;
-    dragHandleRef?: React.RefObject<HTMLDivElement>;
-    // ... additional state and methods
+  additionalProps: Atom<LayoutNodeAdditionalProps>;
+  innerRect: Atom<CSSProperties>;
+  blockNum: Atom<number>;
+  nodeId: string;
+  blockId: string;
+  isFocused: Atom<boolean>;
+  isMagnified: Atom<boolean>;
+  isEphemeral: Atom<boolean>;
+  toggleMagnify: () => void;
+  focusNode: () => void;
+  onClose: () => void;
+  dragHandleRef?: React.RefObject<HTMLDivElement>;
+  // ... additional state and methods
 }
 ```
 
@@ -99,6 +102,7 @@ interface NodeModel {
 The central orchestrator that manages the entire layout system:
 
 **Key Responsibilities:**
+
 - Maintains tree state through Jotai atoms
 - Processes layout actions (move, resize, insert, delete)
 - Computes layout positions and transforms
@@ -107,19 +111,21 @@ The central orchestrator that manages the entire layout system:
 - Provides node models for React components
 
 **State Management:**
+
 ```typescript
 class LayoutModel {
-    treeStateAtom: WritableLayoutTreeStateAtom;  // Persistent state
-    leafs: PrimitiveAtom<LayoutNode[]>;          // Computed leaf nodes
-    additionalProps: PrimitiveAtom<Record<string, LayoutNodeAdditionalProps>>;
-    pendingTreeAction: AtomWithThrottle<LayoutTreeAction>;
-    activeDrag: PrimitiveAtom<boolean>;
-    // ... many more atoms for different aspects
+  treeStateAtom: WritableLayoutTreeStateAtom; // Persistent state
+  leafs: PrimitiveAtom<LayoutNode[]>; // Computed leaf nodes
+  additionalProps: PrimitiveAtom<Record<string, LayoutNodeAdditionalProps>>;
+  pendingTreeAction: AtomWithThrottle<LayoutTreeAction>;
+  activeDrag: PrimitiveAtom<boolean>;
+  // ... many more atoms for different aspects
 }
 ```
 
 **Action Processing:**
 The model uses a reducer pattern to process actions:
+
 ```typescript
 treeReducer(action: LayoutTreeAction) {
     switch (action.type) {
@@ -143,18 +149,18 @@ The system uses a comprehensive action system for all modifications:
 
 ```typescript
 enum LayoutTreeActionType {
-    ComputeMove = "computemove",      // Preview move operation
-    Move = "move",                    // Execute move
-    Swap = "swap",                    // Swap two nodes
-    ResizeNode = "resize",            // Resize node(s)
-    InsertNode = "insert",            // Insert new node
-    InsertNodeAtIndex = "insertatindex", // Insert at specific index
-    DeleteNode = "delete",            // Remove node
-    FocusNode = "focus",              // Change focus
-    MagnifyNodeToggle = "magnify",    // Toggle magnification
-    SplitHorizontal = "splithorizontal", // Split horizontally
-    SplitVertical = "splitvertical",  // Split vertically
-    // ... more actions
+  ComputeMove = "computemove", // Preview move operation
+  Move = "move", // Execute move
+  Swap = "swap", // Swap two nodes
+  ResizeNode = "resize", // Resize node(s)
+  InsertNode = "insert", // Insert new node
+  InsertNodeAtIndex = "insertatindex", // Insert at specific index
+  DeleteNode = "delete", // Remove node
+  FocusNode = "focus", // Change focus
+  MagnifyNodeToggle = "magnify", // Toggle magnification
+  SplitHorizontal = "splithorizontal", // Split horizontally
+  SplitVertical = "splitvertical", // Split vertically
+  // ... more actions
 }
 ```
 
@@ -172,18 +178,18 @@ enum LayoutTreeActionType {
 ```typescript
 // 1. Compute operation during drag
 const computeAction: LayoutTreeComputeMoveNodeAction = {
-    type: LayoutTreeActionType.ComputeMove,
-    nodeId: targetNodeId,
-    nodeToMoveId: draggedNodeId,
-    direction: DropDirection.Right
+  type: LayoutTreeActionType.ComputeMove,
+  nodeId: targetNodeId,
+  nodeToMoveId: draggedNodeId,
+  direction: DropDirection.Right,
 };
 
 // 2. Execute on drop
 const moveAction: LayoutTreeMoveNodeAction = {
-    type: LayoutTreeActionType.Move,
-    parentId: newParentId,
-    index: insertIndex,
-    node: nodeToMove
+  type: LayoutTreeActionType.Move,
+  parentId: newParentId,
+  index: insertIndex,
+  node: nodeToMove,
 };
 ```
 
@@ -197,13 +203,20 @@ When dragging over a node, the system determines drop direction based on cursor 
 
 ```typescript
 enum DropDirection {
-    Top = 0, Right = 1, Bottom = 2, Left = 3,
-    OuterTop = 4, OuterRight = 5, OuterBottom = 6, OuterLeft = 7,
-    Center = 8
+  Top = 0,
+  Right = 1,
+  Bottom = 2,
+  Left = 3,
+  OuterTop = 4,
+  OuterRight = 5,
+  OuterBottom = 6,
+  OuterLeft = 7,
+  Center = 8,
 }
 ```
 
 **Drop Zones:**
+
 - **Inner zones** (Top/Right/Bottom/Left): Insert within the target node
 - **Outer zones**: Insert in the target's parent
 - **Center**: Swap nodes
@@ -211,6 +224,7 @@ enum DropDirection {
 ### Drag Preview
 
 The system generates drag previews by:
+
 1. Rendering content to an off-screen element
 2. Converting to PNG using `html-to-image`
 3. Using the image as the drag preview
@@ -223,12 +237,12 @@ Resize handles are dynamically positioned between adjacent nodes:
 
 ```typescript
 interface ResizeHandleProps {
-    id: string;
-    parentNodeId: string;
-    parentIndex: number;
-    centerPx: number;              // Handle position
-    transform: CSSProperties;      // CSS positioning
-    flexDirection: FlexDirection;  // Handle orientation
+  id: string;
+  parentNodeId: string;
+  parentIndex: number;
+  centerPx: number; // Handle position
+  transform: CSSProperties; // CSS positioning
+  flexDirection: FlexDirection; // Handle orientation
 }
 ```
 
@@ -281,6 +295,7 @@ balanceNode(node) // Optimize tree structure
 ### Tree Balancing
 
 The system automatically optimizes the tree structure:
+
 - Removes unnecessary intermediate nodes
 - Flattens single-child containers
 - Ensures valid flex directions
@@ -300,17 +315,17 @@ The layout state synchronizes with the backend through:
 
 ```typescript
 const layoutTreeStateAtom = atom(
-    (get) => {
-        // Read from backend
-        const layoutState = get(backendLayoutStateAtom);
-        return transformToTreeState(layoutState);
-    },
-    (get, set, treeState) => {
-        // Write to backend
-        if (generationNewer(treeState)) {
-            set(backendLayoutStateAtom, transformFromTreeState(treeState));
-        }
+  (get) => {
+    // Read from backend
+    const layoutState = get(backendLayoutStateAtom);
+    return transformToTreeState(layoutState);
+  },
+  (get, set, treeState) => {
+    // Write to backend
+    if (generationNewer(treeState)) {
+      set(backendLayoutStateAtom, transformFromTreeState(treeState));
     }
+  }
 );
 ```
 
@@ -319,6 +334,7 @@ const layoutTreeStateAtom = atom(
 ### Magnification
 
 Nodes can be magnified to take up the full layout space:
+
 - Magnified nodes appear above others (higher z-index)
 - Only one node can be magnified at a time
 - Animation smoothly transitions between normal and magnified states
@@ -326,6 +342,7 @@ Nodes can be magnified to take up the full layout space:
 ### Ephemeral Nodes
 
 Temporary nodes that aren't part of the persistent tree:
+
 - Used for preview/temporary content
 - Automatically cleaned up
 - Appear above the normal layout
@@ -341,6 +358,7 @@ Temporary nodes that aren't part of the persistent tree:
 ### React Integration
 
 **Hooks:**
+
 - [`useTileLayout()`](frontend/layout/lib/layoutModelHooks.ts:51) - Main hook for layout setup
 - [`useNodeModel()`](frontend/layout/lib/layoutModelHooks.ts:65) - Get node model for component
 - [`useDebouncedNodeInnerRect()`](frontend/layout/lib/layoutModelHooks.ts:69) - Animated positioning
@@ -351,9 +369,9 @@ The layout system is content-agnostic through render callbacks:
 
 ```typescript
 interface TileLayoutContents {
-    renderContent: (nodeModel: NodeModel) => React.ReactNode;
-    renderPreview?: (nodeModel: NodeModel) => React.ReactElement;
-    onNodeDelete?: (data: TabLayoutData) => Promise<void>;
+  renderContent: (nodeModel: NodeModel) => React.ReactNode;
+  renderPreview?: (nodeModel: NodeModel) => React.ReactElement;
+  onNodeDelete?: (data: TabLayoutData) => Promise<void>;
 }
 ```
 
@@ -383,6 +401,7 @@ interface TileLayoutContents {
 ### Custom Layout Behaviors
 
 Override or extend layout computation by:
+
 1. Modifying [`computeNodeFromProps()`](frontend/layout/lib/layoutModel.ts:718)
 2. Adding custom CSS transforms
 3. Implementing special handling in action reducers
@@ -390,6 +409,7 @@ Override or extend layout computation by:
 ## Error Handling
 
 The system includes extensive validation:
+
 - Node structure validation
 - Action parameter checking
 - Tree consistency checks
@@ -398,13 +418,15 @@ The system includes extensive validation:
 ## Testing
 
 The layout system includes comprehensive tests:
+
 - [`layoutNode.test.ts`](frontend/layout/tests/layoutNode.test.ts) - Node operations
-- [`layoutTree.test.ts`](frontend/layout/tests/layoutTree.test.ts) - Tree operations  
+- [`layoutTree.test.ts`](frontend/layout/tests/layoutTree.test.ts) - Tree operations
 - [`utils.test.ts`](frontend/layout/tests/utils.test.ts) - Utility functions
 
 ## Debugging
 
 For debugging layout issues:
+
 1. Check `treeState.generation` for state changes
 2. Inspect `additionalProps` for computed layout data
 3. Use browser dev tools to examine CSS transforms

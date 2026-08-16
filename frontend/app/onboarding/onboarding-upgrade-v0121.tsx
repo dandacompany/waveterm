@@ -39,9 +39,7 @@ const UpgradeOnboardingModal_v0_12_1_Content = () => {
                     <i className="text-[24px] text-accent fa-solid fa-sparkles"></i>
                 </div>
                 <div className="flex flex-col items-start gap-2 flex-1">
-                    <div className="text-foreground text-base font-semibold leading-[18px]">
-                        Wave AI Improvements
-                    </div>
+                    <div className="text-foreground text-base font-semibold leading-[18px]">Wave AI Improvements</div>
                     <div className="text-secondary leading-5">
                         <ul className="list-disc list-outside space-y-1 pl-5">
                             <li>Display reasoning summaries while waiting for AI responses</li>
