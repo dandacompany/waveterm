@@ -320,4 +320,6 @@ test("computeSplitNodeSize", () => {
         undefined,
         "no percentage and no fallback is undefined"
     );
+    assert.equal(computeSplitNodeSize(10, 100, undefined), 990, "100 percent clamps to 99, never divides by zero");
+    assert.equal(computeSplitNodeSize(10, 0, undefined), 1, "0 percent clamps to 1");
 });

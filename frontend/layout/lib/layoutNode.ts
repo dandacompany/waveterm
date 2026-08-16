@@ -296,5 +296,7 @@ export function computeSplitNodeSize(targetSize: number, sizePercent: number, fa
     if (sizePercent == null) {
         return fallback;
     }
-    return Math.max(1, Math.round((targetSize * sizePercent) / (100 - sizePercent)));
+    // clamped before dividing: at 100 the divisor would be 0 and the size Infinity
+    const pct = Math.min(99, Math.max(1, sizePercent));
+    return Math.max(1, Math.round((targetSize * pct) / (100 - pct)));
 }
