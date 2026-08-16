@@ -95,6 +95,15 @@ func resolveThis(ctx context.Context, data wshrpc.CommandResolveIdsData, value s
 	}
 
 	if value == SimpleId_This || value == SimpleId_Block {
+		if data.TabId != "" {
+			blockTabId, err := wstore.DBFindTabForBlockId(ctx, data.BlockId)
+			if err != nil {
+				return nil, fmt.Errorf("error finding tab: %v", err)
+			}
+			if blockTabId != data.TabId {
+				return nil, fmt.Errorf("%q does not resolve within tab scope %q; the current block belongs to a different tab", value, data.TabId)
+			}
+		}
 		return &waveobj.ORef{OType: waveobj.OType_Block, OID: data.BlockId}, nil
 	}
 	if value == SimpleId_Tab {

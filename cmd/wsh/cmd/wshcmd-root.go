@@ -121,6 +121,9 @@ func resolveBlockArgInTab(tabId string) (*waveobj.ORef, error) {
 	if oref == "" {
 		oref = "this"
 	}
+	if tabId != "" && (oref == "this" || oref == "block") {
+		return nil, fmt.Errorf("--tab requires an explicit block (-b); %q always means the current block", oref)
+	}
 	fullORef, err := resolveSimpleIdInTab(oref, tabId)
 	if err != nil {
 		return nil, fmt.Errorf("resolving blockid: %w", err)
