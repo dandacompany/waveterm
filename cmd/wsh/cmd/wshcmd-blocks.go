@@ -111,17 +111,22 @@ func blocksListRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to list workspaces: %v", err)
 	}
 
-	if len(workspaces) == 0 {
-		return fmt.Errorf("no workspaces found")
-	}
-
 	var workspaceIdsToQuery []string
 
 	// Determine which workspaces to query
 	if blocksWorkspaceId != "" && blocksWindowId != "" {
 		return fmt.Errorf("--workspace and --window are mutually exclusive; specify only one")
 	}
-	if blocksWorkspaceId != "" {
+	if len(workspaces) == 0 && blocksWorkspaceId == "" {
+		// WorkspaceListCommand drops any workspace with an empty name, icon, or color,
+		// which is the default state -- so an unnamed workspace makes this list empty
+		// even though the caller is sitting in one
+		wsId, wsErr := currentWorkspaceId()
+		if wsErr != nil {
+			return fmt.Errorf("no workspaces found: %w", wsErr)
+		}
+		workspaceIdsToQuery = []string{wsId}
+	} else if blocksWorkspaceId != "" {
 		workspaceIdsToQuery = []string{blocksWorkspaceId}
 	} else if blocksWindowId != "" {
 		// Find workspace ID for this window

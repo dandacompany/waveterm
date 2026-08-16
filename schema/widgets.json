@@ -1,226 +1,237 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$defs": {
-        "BlockDef": {
-            "properties": {
-                "files": {
-                    "additionalProperties": {
-                        "$ref": "#/$defs/FileDef"
-                    },
-                    "type": "object"
-                },
-                "meta": {
-                    "properties": {
-                        "view": {
-                            "anyOf": [
-                                {
-                                    "enum": ["term", "preview", "web", "sysinfo", "launcher"]
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ]
-                        },
-                        "file": {
-                            "type": "string"
-                        },
-                        "url": {
-                            "type": "string"
-                        },
-                        "controller": {
-                            "anyOf": [
-                                {
-                                    "enum": ["shell", "cmd"]
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ]
-                        },
-                        "cmd": {
-                            "type": "string"
-                        },
-                        "cmd:interactive": {
-                            "type": "boolean"
-                        },
-                        "cmd:login": {
-                            "type": "boolean"
-                        },
-                        "cmd:persistent": {
-                            "type": "boolean"
-                        },
-                        "cmd:runonstart": {
-                            "type": "boolean"
-                        },
-                        "cmd:clearonstart": {
-                            "type": "boolean"
-                        },
-                        "cmd:runonce": {
-                            "type": "boolean"
-                        },
-                        "cmd:closeonexit": {
-                            "type": "boolean"
-                        },
-                        "cmd:closeonexitforce": {
-                            "type": "boolean"
-                        },
-                        "cmd:closeonexitdelay": {
-                            "type": "number"
-                        },
-                        "cmd:nowsh": {
-                            "type": "boolean"
-                        },
-                        "cmd:args": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        },
-                        "cmd:shell": {
-                            "type": "boolean"
-                        },
-                        "cmd:allowconnchange": {
-                            "type": "boolean"
-                        },
-                        "cmd:env": {
-                            "additionalProperties": {
-                                "type": "string"
-                            },
-                            "type": "object"
-                        },
-                        "cmd:cwd": {
-                            "type": "string"
-                        },
-                        "cmd:initscript": {
-                            "type": "string"
-                        },
-                        "cmd:initscript.sh": {
-                            "type": "string"
-                        },
-                        "cmd:initscript.bash": {
-                            "type": "string"
-                        },
-                        "cmd:initscript.zsh": {
-                            "type": "string"
-                        },
-                        "cmd:initscript.pwsh": {
-                            "type": "string"
-                        },
-                        "cmd:initscript.fish": {
-                            "type": "string"
-                        },
-                        "term:fontsize": {
-                            "type": "integer"
-                        },
-                        "term:fontfamily": {
-                            "type": "string"
-                        },
-                        "term:mode": {
-                            "type": "string"
-                        },
-                        "term:theme": {
-                            "type": "string"
-                        },
-                        "term:localshellpath": {
-                            "type": "string"
-                        },
-                        "term:localshellopts": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "type": "array"
-                        },
-                        "term:scrollback": {
-                            "type": "integer"
-                        },
-                        "term:transparency": {
-                            "type": "number"
-                        },
-                        "term:allowbracketedpaste": {
-                            "type": "boolean"
-                        },
-                        "term:shiftenternewline": {
-                            "type": "boolean"
-                        },
-                        "term:macoptionismeta": {
-                            "type": "boolean"
-                        },
-                        "term:bellsound": {
-                            "type": "boolean"
-                        },
-                        "term:bellindicator": {
-                            "type": "boolean"
-                        },
-                        "term:durable": {
-                            "type": "boolean"
-                        }
-                    },
-                    "additionalProperties": true,
-                    "type": "object"
-                }
-            },
-            "additionalProperties": false,
-            "type": "object"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "BlockDef": {
+      "properties": {
+        "files": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FileDef"
+          },
+          "type": "object"
         },
-        "FileDef": {
-            "properties": {
-                "content": {
-                    "type": "string"
+        "meta": {
+          "properties": {
+            "view": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "term",
+                    "preview",
+                    "web",
+                    "sysinfo",
+                    "launcher"
+                  ]
                 },
-                "meta": {
-                    "type": "object"
+                {
+                  "type": "string"
                 }
+              ]
             },
-            "additionalProperties": false,
-            "type": "object"
-        },
-        "WidgetConfigType": {
-            "properties": {
-                "display:order": {
-                    "type": "number"
+            "file": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "controller": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "shell",
+                    "cmd"
+                  ]
                 },
-                "display:hidden": {
-                    "type": "boolean"
-                },
-                "icon": {
-                    "type": "string"
-                },
-                "color": {
-                    "type": "string"
-                },
-                "label": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "workspaces": {
-                    "items": {
-                        "type": "string"
-                    },
-                    "type": "array"
-                },
-                "magnified": {
-                    "type": "boolean"
-                },
-                "blockdef": {
-                    "$ref": "#/$defs/BlockDef"
+                {
+                  "type": "string"
                 }
+              ]
             },
-            "additionalProperties": false,
-            "type": "object",
-            "required": ["blockdef"]
-        }
-    },
-    "additionalProperties": {
-        "anyOf": [
-            {
-                "$ref": "#/$defs/WidgetConfigType"
+            "cmd": {
+              "type": "string"
             },
-            {
-                "type": "null"
+            "cmd:interactive": {
+              "type": "boolean"
+            },
+            "cmd:login": {
+              "type": "boolean"
+            },
+            "cmd:persistent": {
+              "type": "boolean"
+            },
+            "cmd:runonstart": {
+              "type": "boolean"
+            },
+            "cmd:clearonstart": {
+              "type": "boolean"
+            },
+            "cmd:runonce": {
+              "type": "boolean"
+            },
+            "cmd:closeonexit": {
+              "type": "boolean"
+            },
+            "cmd:closeonexitforce": {
+              "type": "boolean"
+            },
+            "cmd:closeonexitdelay": {
+              "type": "number"
+            },
+            "cmd:nowsh": {
+              "type": "boolean"
+            },
+            "cmd:args": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "cmd:shell": {
+              "type": "boolean"
+            },
+            "cmd:allowconnchange": {
+              "type": "boolean"
+            },
+            "cmd:env": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "cmd:cwd": {
+              "type": "string"
+            },
+            "cmd:initscript": {
+              "type": "string"
+            },
+            "cmd:initscript.sh": {
+              "type": "string"
+            },
+            "cmd:initscript.bash": {
+              "type": "string"
+            },
+            "cmd:initscript.zsh": {
+              "type": "string"
+            },
+            "cmd:initscript.pwsh": {
+              "type": "string"
+            },
+            "cmd:initscript.fish": {
+              "type": "string"
+            },
+            "term:fontsize": {
+              "type": "integer"
+            },
+            "term:fontfamily": {
+              "type": "string"
+            },
+            "term:mode": {
+              "type": "string"
+            },
+            "term:theme": {
+              "type": "string"
+            },
+            "term:localshellpath": {
+              "type": "string"
+            },
+            "term:localshellopts": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "term:scrollback": {
+              "type": "integer"
+            },
+            "term:transparency": {
+              "type": "number"
+            },
+            "term:allowbracketedpaste": {
+              "type": "boolean"
+            },
+            "term:shiftenternewline": {
+              "type": "boolean"
+            },
+            "term:macoptionismeta": {
+              "type": "boolean"
+            },
+            "term:bellsound": {
+              "type": "boolean"
+            },
+            "term:bellindicator": {
+              "type": "boolean"
+            },
+            "term:durable": {
+              "type": "boolean"
             }
-        ]
+          },
+          "additionalProperties": true,
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
     },
-    "type": "object"
+    "FileDef": {
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "meta": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "WidgetConfigType": {
+      "properties": {
+        "display:order": {
+          "type": "number"
+        },
+        "display:hidden": {
+          "type": "boolean"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "workspaces": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "magnified": {
+          "type": "boolean"
+        },
+        "blockdef": {
+          "$ref": "#/$defs/BlockDef"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "blockdef"
+      ]
+    }
+  },
+  "additionalProperties": {
+    "anyOf": [
+      {
+        "$ref": "#/$defs/WidgetConfigType"
+      },
+      {
+        "type": "null"
+      }
+    ]
+  },
+  "type": "object"
 }
