@@ -84,6 +84,7 @@ func init() {
 	tabCmd.AddCommand(tabListCmd)
 	tabCmd.AddCommand(tabCreateCmd)
 	tabCmd.AddCommand(tabRenameCmd)
+	tabCmd.AddCommand(tabMoveCmd)
 	tabCmd.AddCommand(tabDeleteCmd)
 	rootCmd.AddCommand(tabCmd)
 }

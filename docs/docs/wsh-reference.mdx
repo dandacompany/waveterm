@@ -1151,6 +1151,27 @@ wsh tab rename <tab> <new-name>
 
 Rename a tab. The tab bar updates immediately.
 
+### move
+
+```sh
+wsh tab move <tab> <position>
+```
+
+Move a tab to a new position in the tab bar. The position is 1-based, matching the numbers `wsh tab list` prints.
+
+Examples:
+
+```sh
+# make the logs tab the leftmost one
+wsh tab move logs 1
+
+# move the third tab to the front
+wsh tab move 3 1
+
+# move the current tab to second place
+wsh tab move this 2
+```
+
 ### delete
 
 ```sh
