@@ -32,6 +32,7 @@ var (
 	termScrollbackLineEnd    int
 	termScrollbackLastCmd    bool
 	termScrollbackOutputFile string
+	termScrollbackTab        string
 )
 
 func init() {
@@ -41,6 +42,7 @@ func init() {
 	termScrollbackCmd.Flags().IntVar(&termScrollbackLineEnd, "end", 0, "ending line number (0 = all lines)")
 	termScrollbackCmd.Flags().BoolVar(&termScrollbackLastCmd, "lastcommand", false, "get output of last command (requires shell integration)")
 	termScrollbackCmd.Flags().StringVarP(&termScrollbackOutputFile, "output", "o", "", "write output to file instead of stdout")
+	termScrollbackCmd.Flags().StringVar(&termScrollbackTab, "tab", "", "tab containing the block (number, name, or id; defaults to current tab)")
 }
 
 func termScrollbackRun(cmd *cobra.Command, args []string) (rtnErr error) {
@@ -48,8 +50,11 @@ func termScrollbackRun(cmd *cobra.Command, args []string) (rtnErr error) {
 		sendActivity("termscrollback", rtnErr == nil)
 	}()
 
-	// Resolve the block argument
-	fullORef, err := resolveBlockArg()
+	scopeTabId, err := resolveTabScopeArg(termScrollbackTab)
+	if err != nil {
+		return err
+	}
+	fullORef, err := resolveBlockArgInTab(scopeTabId)
 	if err != nil {
 		return err
 	}

@@ -113,11 +113,15 @@ func activityWrap(activityStr string, origRunE RunEFnType) RunEFnType {
 }
 
 func resolveBlockArg() (*waveobj.ORef, error) {
+	return resolveBlockArgInTab("")
+}
+
+func resolveBlockArgInTab(tabId string) (*waveobj.ORef, error) {
 	oref := blockArg
 	if oref == "" {
 		oref = "this"
 	}
-	fullORef, err := resolveSimpleId(oref)
+	fullORef, err := resolveSimpleIdInTab(oref, tabId)
 	if err != nil {
 		return nil, fmt.Errorf("resolving blockid: %w", err)
 	}
@@ -184,6 +188,10 @@ func isFullORef(orefStr string) bool {
 }
 
 func resolveSimpleId(id string) (*waveobj.ORef, error) {
+	return resolveSimpleIdInTab(id, "")
+}
+
+func resolveSimpleIdInTab(id string, tabId string) (*waveobj.ORef, error) {
 	if isFullORef(id) {
 		orefObj, err := waveobj.ParseORef(id)
 		if err != nil {
@@ -192,11 +200,12 @@ func resolveSimpleId(id string) (*waveobj.ORef, error) {
 		return &orefObj, nil
 	}
 	blockId := os.Getenv("WAVETERM_BLOCKID")
-	if blockId == "" {
+	if blockId == "" && tabId == "" {
 		return nil, fmt.Errorf("no WAVETERM_BLOCKID env var set")
 	}
 	rtnData, err := wshclient.ResolveIdsCommand(RpcClient, wshrpc.CommandResolveIdsData{
 		BlockId: blockId,
+		TabId:   tabId,
 		Ids:     []string{id},
 	}, &wshrpc.RpcOpts{Timeout: 2000})
 	if err != nil {

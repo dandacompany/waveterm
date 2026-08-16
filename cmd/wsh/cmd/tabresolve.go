@@ -133,3 +133,12 @@ func resolveTabArg(arg string) (string, error) {
 	}
 	return matches[0].TabId, nil
 }
+
+// returns "" when no tab was requested, so callers stay on the default
+// current-tab resolution path instead of paying an RPC round trip
+func resolveTabScopeArg(arg string) (string, error) {
+	if arg == "" {
+		return "", nil
+	}
+	return resolveTabArg(arg)
+}
