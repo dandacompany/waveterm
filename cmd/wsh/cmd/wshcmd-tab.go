@@ -12,6 +12,10 @@ import (
 	"github.com/wavetermdev/waveterm/pkg/wshrpc/wshclient"
 )
 
+// tab create and delete do more work than a lookup -- create applies a layout and
+// starts a shell, delete tears down the tab's blocks
+const tabMutateRpcTimeout = 5000
+
 var tabListJSON bool
 var tabCreateEmpty bool
 var tabCreateNoActivate bool
@@ -127,7 +131,7 @@ func tabCreateRun(cmd *cobra.Command, args []string) (rtnErr error) {
 		Name:        name,
 		Empty:       tabCreateEmpty,
 		NoActivate:  tabCreateNoActivate,
-	}, &wshrpc.RpcOpts{Timeout: 5000})
+	}, &wshrpc.RpcOpts{Timeout: tabMutateRpcTimeout})
 	if err != nil {
 		return fmt.Errorf("creating tab: %w", err)
 	}
@@ -166,7 +170,7 @@ func tabDeleteRun(cmd *cobra.Command, args []string) (rtnErr error) {
 	err = wshclient.DeleteTabCommand(RpcClient, wshrpc.CommandDeleteTabData{
 		TabId:       tabId,
 		CloseWindow: tabDeleteCloseWindow,
-	}, &wshrpc.RpcOpts{Timeout: 5000})
+	}, &wshrpc.RpcOpts{Timeout: tabMutateRpcTimeout})
 	if err != nil {
 		return fmt.Errorf("deleting tab: %w", err)
 	}
