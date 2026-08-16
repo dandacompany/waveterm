@@ -62,10 +62,12 @@ func createBlockRun(cmd *cobra.Command, args []string) (rtnErr error) {
 	if len(args) > 1 {
 		metaSetStrs = args[1:]
 	}
-	if createBlockSize != 0 && createBlockTarget == "" {
+	// Changed(), not a zero check: --size 0 is out of range, not "unset"
+	sizeGiven := cmd.Flags().Changed("size")
+	if sizeGiven && createBlockTarget == "" {
 		return fmt.Errorf("--size requires --target")
 	}
-	if createBlockSize != 0 {
+	if sizeGiven {
 		if createBlockSize < 1 || createBlockSize > 99 {
 			return fmt.Errorf("targetsizepercent must be between 1 and 99, got %d", createBlockSize)
 		}
@@ -111,6 +113,13 @@ func createBlockRun(cmd *cobra.Command, args []string) (rtnErr error) {
 		return err
 	}
 	meta["view"] = viewName
+	if viewName == "term" {
+		if _, ok := meta[waveobj.MetaKey_Controller]; !ok {
+			// a term block with no controller renders an empty terminal with no shell
+			// behind it, so sendkeys and termscrollback have nothing to attach to
+			meta[waveobj.MetaKey_Controller] = "shell"
+		}
+	}
 	data := wshrpc.CommandCreateBlockData{
 		TabId: tabId,
 		BlockDef: &waveobj.BlockDef{

@@ -403,6 +403,8 @@ wsh createblock <view> [key=value ...] [flags]
 
 Create a new block in a tab. The view name is the widget type (`term`, `preview`, `web`, `edit`, `sysinfo`, `waveai`), and any `key=value` pairs are set as block metadata.
 
+A `term` block gets `controller=shell` unless you set `controller` yourself, so it comes up running a shell that `wsh sendkeys` and `wsh termscrollback` can talk to.
+
 Without `--target`, the block is inserted using the tab's default placement. With `--target`, the block is placed relative to an existing block.
 
 Flags:

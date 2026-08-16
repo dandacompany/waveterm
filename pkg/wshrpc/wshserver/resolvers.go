@@ -203,11 +203,19 @@ func resolveBlock(ctx context.Context, data wshrpc.CommandResolveIdsData, value 
 		return nil, fmt.Errorf("error retrieving layout state %s: %w", tab.LayoutState, err)
 	}
 
-	if layout.LeafOrder == nil {
-		return nil, fmt.Errorf("could not resolve block num %v, leaf order is empty", blockNum)
+	leafIndex := blockNum - 1 // block nums are 1-indexed
+
+	// LeafOrder is computed by the frontend as it renders, so a tab that has never been
+	// displayed has none -- fall back to the tab's own block list, which the backend owns.
+	// Visual order can differ from BlockIds order once a layout exists, so this is only a
+	// fallback and never overrides a real LeafOrder.
+	if layout.LeafOrder == nil || len(*layout.LeafOrder) == 0 {
+		if len(tab.BlockIds) <= leafIndex {
+			return nil, fmt.Errorf("could not find a block matching blockNum %v in tab %s", blockNum, tabId)
+		}
+		return &waveobj.ORef{OType: waveobj.OType_Block, OID: tab.BlockIds[leafIndex]}, nil
 	}
 
-	leafIndex := blockNum - 1 // block nums are 1-indexed
 	if len(*layout.LeafOrder) <= leafIndex {
 		return nil, fmt.Errorf("could not find a node in the layout matching blockNum %v", blockNum)
 	}
