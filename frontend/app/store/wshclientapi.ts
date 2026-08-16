@@ -102,6 +102,12 @@ export class RpcApiType {
         return client.wshRpcCall("checkgoversion", null, opts);
     }
 
+    // command "closewindow" [call]
+    CloseWindowCommand(client: WshClient, data: string, opts?: RpcOpts): Promise<void> {
+        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "closewindow", data, opts);
+        return client.wshRpcCall("closewindow", data, opts);
+    }
+
     // command "connconnect" [call]
     ConnConnectCommand(client: WshClient, data: ConnRequest, opts?: RpcOpts): Promise<void> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "connconnect", data, opts);
